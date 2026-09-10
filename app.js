@@ -213,7 +213,6 @@
     const toggle = document.querySelector("#nav-collapse");
     toggle.setAttribute("aria-expanded", String(!state.navCollapsed));
     toggle.setAttribute("aria-label", state.navCollapsed ? "Expand navigation" : "Collapse navigation");
-    toggle.querySelector("span").textContent = state.navCollapsed ? "Expand" : "Collapse";
   });
   document.querySelector("#composer").addEventListener("submit", event => {
     event.preventDefault();

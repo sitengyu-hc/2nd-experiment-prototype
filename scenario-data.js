@@ -29,7 +29,7 @@ window.PROTOTYPE_DATA = {
   ],
   suggestedPrompts: [
     "What options do I have to fix this?",
-    "What is the potential blast radius?",
+    "What is the potential cross workspace impact?",
     "How do I avoid destroying the database?",
     "Who introduced the lifecycle guard?"
   ],
@@ -37,7 +37,7 @@ window.PROTOTYPE_DATA = {
     "How many EC2 instances exist across my organization?",
     "Which workspaces use AWS provider version 5.x?",
     "What resources depend on workspace X?",
-    "What is the blast radius of workspace Y?",
+    "What is the cross workspace impact of workspace Y?",
     "Show resources using module Z."
   ],
   responses: {
@@ -53,7 +53,7 @@ window.PROTOTYPE_DATA = {
       html: `<p>There are three paths, depending on whether the database rename was intended:</p><ol><li><strong>Safest: revert the module upgrade.</strong> Pin the caller to <code>v4.0.0</code>, then run a new plan. This preserves the current database.</li><li><strong>Upgrade without renaming.</strong> Update v5.1.0 so it keeps the existing <code>db_name</code>. Validate the module change with a new plan before rolling it out.</li><li><strong>Perform a controlled replacement.</strong> Only if a new database is intended: create a migration and backup plan, review dependents, then explicitly manage the lifecycle guard. Do not simply remove <code>prevent_destroy</code>.</li></ol><div class="code-card"><div class="code-title">main.tf</div><pre><span class="line">18</span> module "database" {\n<span class="line">19</span> <span class="minus">- source = "./modules/rds/v5.1.0"</span>\n<span class="line">20</span> <span class="plus">+ source = "./modules/rds/v4.0.0"</span>\n<span class="line">21</span> }</pre></div>`,
       evidence: ["Configuration version diff", "Module v4.0.0", "Module v5.1.0"]
     },
-    "What is the potential blast radius?": {
+    "What is the potential cross workspace impact?": {
       type: "answer",
       feedback: true,
       html: `<p><strong>Five workspaces consume the changed database module version or have a direct dependency on one of those workspaces.</strong></p><p>No additional runs have been triggered. These configurations are passive until their next plan, unless a workspace has an explicit run trigger.</p><p>The two production consumers are the highest risk because their next plan could propose the same database replacement.</p><button class="inline-link" data-action="show-impact">View 5 affected workspaces in Explorer →</button>`,
@@ -90,7 +90,7 @@ window.PROTOTYPE_DATA = {
       html: `<p>Workspace X has <strong>7 direct dependents</strong> across 4 workspaces. They consume its remote-state outputs for network IDs, security groups, and database endpoints.</p><p>Two of those dependents are production workspaces and should be reviewed before changing outputs.</p>`,
       evidence: ["Explorer dependency graph"]
     },
-    "What is the blast radius of workspace Y?": {
+    "What is the cross workspace impact of workspace Y?": {
       type: "answer",
       html: `<p>A change to workspace Y could affect <strong>11 downstream resources in 5 workspaces</strong>.</p><p>The highest-risk path reaches two production services through shared networking outputs. Review the proposed output changes and dependent run triggers before applying.</p>`,
       evidence: ["Explorer dependency graph", "Workspace run triggers"]
