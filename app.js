@@ -94,7 +94,7 @@
         <div class="breadcrumbs">CoolCorp　/　Explorer　/　<strong>${state.impactMode ? "Impact analysis" : "Types"}</strong></div>
         <h1>${icon("explorer")} Explorer</h1><p>Explore your data to analyze your organization's Terraform usage.</p>
         <label class="field-label">BROWSE</label><button class="select-control">Types, Use cases and Saved views <span>⌄</span></button>
-        ${state.impactMode ? '<div class="filter-chip">×　Affected by RDS module v5.1.0　<strong>5</strong></div>' : '<button class="ask-advisor" data-action="ask-advisor">✦ Ask Advisor</button>'}
+        ${state.impactMode ? '<div class="filter-chip">×　Affected by RDS module v5.1.0　<strong>5</strong></div>' : '<button class="explorer-query-link" data-action="ask-advisor">Enter your own query</button>'}
         <label class="field-label">TRY THE FOLLOWING QUERIES BASED ON YOUR USAGE</label>
         <button class="query-row">▤　Drifted Workspaces <span>25</span></button><button class="query-row">▤　Workspaces with failed checks <span>25</span></button><button class="query-row">▤　Policy sets with failures <span>12</span></button><button class="query-row">▤　Top module versions <span>4</span></button>
       </div>
