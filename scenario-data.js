@@ -33,6 +33,11 @@ window.PROTOTYPE_DATA = {
     "How do I avoid destroying the database?",
     "Who introduced the lifecycle guard?"
   ],
+  impactPrompts: [
+    "Save this Explorer view",
+    "Download this view's data",
+    "How do I avoid destroying the database?"
+  ],
   explorerPrompts: [
     "How many EC2 instances exist across my organization?",
     "Which workspaces use AWS provider version 5.x?",
@@ -69,6 +74,16 @@ window.PROTOTYPE_DATA = {
       type: "answer",
       html: `<p>The guard first appears in the shared RDS module at <strong>v5.1.0</strong>. This run was triggered by <strong>devSecOpsGuru</strong> after the caller's module source changed from v4.0.0 to v5.1.0.</p><p>The available run data identifies the configuration change, but not the author of the module's internal commit. Open the module version in the registry or its VCS source to confirm ownership.</p>`,
       evidence: ["Run configuration version", "Private registry module metadata"]
+    },
+    "Save this Explorer view": {
+      type: "answer",
+      html: `<p>Save the current graph and its RDS module filter so your team can return to this investigation.</p><button class="inline-action" data-action="save-view">Save Explorer view</button>`,
+      evidence: []
+    },
+    "Download this view's data": {
+      type: "answer",
+      html: `<p>Download the five affected workspaces and their replacement-risk status as a CSV file.</p><button class="inline-action" data-action="download-view">Download data</button>`,
+      evidence: []
     },
     explorerInitial: {
       type: "answer",

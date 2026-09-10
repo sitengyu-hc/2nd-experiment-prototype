@@ -10,7 +10,13 @@
     impactMode: false,
     advisorJourney: "run",
     navCollapsed: false,
-    promptsOpen: false
+    promptsOpen: false,
+    explorerDisplay: "graph",
+    browseOpen: false,
+    explorerPanelHidden: false,
+    selectedNode: null,
+    modal: null,
+    viewSaved: false
   };
 
   const main = document.querySelector("#main-content");
@@ -90,23 +96,75 @@
   }
 
   function explorerView() {
-    return `<div class="explorer-page">
-      <div class="explorer-controls">
+    return `<div class="explorer-page ${state.explorerPanelHidden ? "panel-hidden" : ""}">
+      <section class="explorer-controls">
+        <button class="hud-hide" data-action="toggle-explorer-panel">HIDE</button>
         <div class="breadcrumbs">CoolCorp　/　Explorer　/　<strong>${state.impactMode ? "Impact analysis" : "Types"}</strong></div>
         <h1>${icon("explorer")} Explorer</h1><p>Explore your data to analyze your organization's Terraform usage.</p>
-        <label class="field-label">BROWSE</label><button class="select-control">Types, Use cases and Saved views <span>⌄</span></button>
-        ${state.impactMode ? '<div class="filter-chip">×　Affected by RDS module v5.1.0　<strong>5</strong></div>' : '<button class="explorer-query-link" data-action="ask-advisor">Enter your own query</button>'}
-        <label class="field-label">TRY THE FOLLOWING QUERIES BASED ON YOUR USAGE</label>
-        <button class="query-row">▤　Drifted Workspaces <span>25</span></button><button class="query-row">▤　Workspaces with failed checks <span>25</span></button><button class="query-row">▤　Policy sets with failures <span>12</span></button><button class="query-row">▤　Top module versions <span>4</span></button>
-      </div>
-      ${state.impactMode ? topologyCanvas() : `<div class="empty-explorer"><div class="empty-icon">⌘</div><strong>Select a Type or Use case to<br>explore your infrastructure.</strong></div>`}
+        <label class="field-label">VIEW MODE</label>
+        <div class="view-toggle"><button data-display="graph" class="${state.explorerDisplay === "graph" ? "active" : ""}">Graph</button><button data-display="table" class="${state.explorerDisplay === "table" ? "active" : ""}">Table View</button></div>
+        <label class="field-label">BROWSE</label><button class="select-control" data-action="toggle-browse">Types, Use cases and Saved views <span>⌄</span></button>
+        ${state.browseOpen ? browseMenu() : ""}
+        ${state.impactMode ? impactViewControls() : defaultExplorerControls()}
+      </section>
+      <button class="hud-show" data-action="toggle-explorer-panel">VIEW</button>
+      ${state.impactMode ? (state.explorerDisplay === "graph" ? topologyCanvas() : impactTable()) : `<div class="empty-explorer"><div class="empty-icon">⌘</div><strong>Get started.</strong><span>Select a Type or Use case to explore your infrastructure.</span></div>`}
+      ${state.modal === "saved-views" ? savedViewsModal() : ""}
+      ${state.modal === "save-view" ? saveViewModal() : ""}
     </div>`;
+  }
+
+  function defaultExplorerControls() {
+    return `<button class="explorer-query-link" data-action="ask-advisor">Enter your own query</button>
+      <label class="field-label">TRY THE FOLLOWING QUERIES BASED ON YOUR USAGE.</label>
+      <div class="query-list"><button class="query-row">Workspaces with failed checks <span>25</span></button><button class="query-row">Policy sets with failures <span>12</span></button><button class="query-row">Top module versions <span>4</span></button><button class="query-row">Providers by workspace count <span>8</span></button><button class="query-row">Resources by type <span>42</span></button><button class="query-row">Top Terraform versions <span>6</span></button></div>`;
+  }
+
+  function impactViewControls() {
+    return `<div class="selected-view"><button data-nav="run" aria-label="Clear view">×</button><span>${icon("explorer")}<strong>RDS module cross-workspace impact</strong><small>5 workspaces</small></span><button data-display="table">TABLE VIEW</button></div>
+      <div class="impact-actions"><button data-action="save-view">▣ ${state.viewSaved ? "SAVED" : "SAVE"}</button><button data-action="download-view">⇩ DOWNLOAD</button></div>
+      <div class="returned-heading"><span>RETURNED NODES</span><strong>5</strong></div>
+      <label class="node-search">⌕ <input placeholder="Search nodes"></label>
+      <div class="returned-nodes">${data.affectedWorkspaces.map(node => `<button data-node="${node.name}"><i class="node-dot ${node.relation}"></i><span>${node.name}</span><small>${node.resources}</small></button>`).join("")}</div>`;
+  }
+
+  function browseMenu() {
+    return `<div class="browse-menu"><div><span>TYPES</span><button>Workspaces</button><button>Policy Sets</button><button>Modules</button><button>Providers</button><button>Resources</button><button>Terraform Versions</button><button data-action="saved-views">Saved views <strong>${state.viewSaved ? 21 : 20}</strong></button></div><div><span>PRE-DEFINED VIEWS</span><button>View All Workspaces</button><button>Organized by Project</button><button>Organized by Status</button><button>Workspaces with failed checks</button><button>Drifted Workspaces</button><button>Latest updated workspaces</button></div></div>`;
   }
 
   function topologyCanvas() {
     const center = data.affectedWorkspaces[0];
-    const lines = data.affectedWorkspaces.slice(1).map(node => `<line x1="${center.x}%" y1="${center.y}%" x2="${node.x}%" y2="${node.y}%"/>`).join("");
-    return `<div class="topology" aria-label="Affected workspace topology"><div class="graph-summary"><strong>Potential impact</strong><span>5 workspaces</span><span class="risk">2 production databases at risk</span></div><svg class="edges" aria-hidden="true">${lines}</svg>${data.affectedWorkspaces.map(node => `<button class="graph-node ${node.relation}" style="left:${node.x}%;top:${node.y}%" data-node="${node.name}">${icon("database")}<strong>${node.name}</strong><span>${node.resources} resources</span>${node.relation === "force" ? '<i>!</i>' : ""}</button>`).join("")}<div class="legend"><span><i class="selected-key"></i> Selected run</span><span><i class="dependent-key"></i> Direct dependent</span><span><i class="force-key"></i> Replacement risk</span></div></div>`;
+    const lines = data.affectedWorkspaces.slice(1).map(node => {
+      const x1 = center.x * 10, y1 = center.y * 6.5, x2 = node.x * 10, y2 = node.y * 6.5;
+      return `<path class="${node.relation}" d="M${x1} ${y1} C${(x1 + x2) / 2} ${y1}, ${(x1 + x2) / 2} ${y2}, ${x2} ${y2}" marker-end="url(#arrow-${node.relation})"/>`;
+    }).join("");
+    const selected = data.affectedWorkspaces.find(node => node.name === state.selectedNode);
+    return `<div class="topology" aria-label="Affected workspace topology"><div class="graph-summary"><strong>Cross-workspace impact</strong><span>5 workspaces</span><span class="risk">2 production databases at risk</span></div><svg class="edges" viewBox="0 0 1000 650" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="arrow-force" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker><marker id="arrow-dependent" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker></defs>${lines}</svg>${data.affectedWorkspaces.map(node => `<button class="graph-node ${node.relation} ${state.selectedNode === node.name ? "is-focused" : ""}" style="left:${node.x}%;top:${node.y}%" data-node="${node.name}"><span class="node-symbol">${icon("database")}</span><strong>${node.name}</strong><small>${node.resources} resources</small>${node.relation === "force" ? '<i>!</i>' : ""}</button>`).join("")}${selected ? nodeDetail(selected) : ""}<div class="graph-tools"><button title="Zoom in">+</button><button title="Zoom out">−</button><button title="Reset zoom">FIT</button><button title="Refresh">↻</button></div><div class="layout-tools"><button class="active">Arc</button><button>Connectors</button><button class="active">Light</button><button>Dark</button></div><div class="legend"><span><i class="workspace-key"></i> Workspace</span><span><i class="selected-key"></i> Selected</span><span><i class="dependent-key"></i> Direct dependent</span><span><i class="force-key"></i> Replacement risk</span></div></div>`;
+  }
+
+  function nodeDetail(node) {
+    return `<aside class="node-detail"><button data-action="clear-node" aria-label="Close">×</button><span>WORKSPACE</span><h3>${node.name}</h3><dl><dt>Resources</dt><dd>${node.resources}</dd><dt>Relationship</dt><dd>${node.relation === "force" ? "Replacement risk" : node.relation === "selected" ? "Selected run" : "Direct dependent"}</dd><dt>Module</dt><dd>rds v5.1.0</dd></dl><a href="#" data-reference>View resources →</a></aside>`;
+  }
+
+  function impactTable() {
+    return `<div class="explorer-table"><div class="table-topline"><strong>Results: 5 Workspaces found.</strong><div><button data-action="save-view">▣ Save</button><button data-action="download-view">⇩ Download</button></div></div><button class="conditions">Show conditions <span>No conditions applied ⓘ</span></button><table><thead><tr><th>Name</th><th>Relationship</th><th>Resources</th><th>Module</th><th>Risk</th></tr></thead><tbody>${data.affectedWorkspaces.map(node => `<tr><td><strong>${node.name}</strong></td><td>${node.relation === "selected" ? "Selected run" : "Downstream"}</td><td>${node.resources}</td><td>rds v5.1.0</td><td>${node.relation === "force" ? '<span class="risk-text">Replacement</span>' : "Review"}</td></tr>`).join("")}</tbody></table><div class="table-pagination">1–5 of 5 <span>Items per page　10</span></div></div>`;
+  }
+
+  function savedViewsModal() {
+    return `<div class="modal-backdrop"><section class="explorer-modal"><button class="modal-close" data-action="close-modal">×</button><h2>Saved Views</h2><p>${state.viewSaved ? 21 : 20} saved views available.</p><div class="saved-toolbar"><input placeholder="Search"><select><option>All types</option><option>Workspaces</option><option>Modules</option></select></div><table><thead><tr><th>Name</th><th>Type</th><th>Owner</th><th>Last Updated</th></tr></thead><tbody>${state.viewSaved ? '<tr><td><strong>RDS module cross-workspace impact</strong></td><td>Workspaces</td><td>AB</td><td>Just now</td></tr>' : ""}<tr><td>Production workspace health</td><td>Workspaces</td><td>Platform team</td><td>2 days ago</td></tr><tr><td>Outdated module versions</td><td>Modules</td><td>AB</td><td>5 days ago</td></tr></tbody></table></section></div>`;
+  }
+
+  function saveViewModal() {
+    return `<div class="modal-backdrop"><section class="save-modal"><button class="modal-close" data-action="close-modal">×</button><h2>Save view</h2><p>Save the current filters and graph layout for future investigation.</p><label>Name<input id="view-name" value="RDS module cross-workspace impact"></label><div><button class="secondary" data-action="close-modal">Cancel</button><button class="primary" data-action="confirm-save">Save view</button></div></section></div>`;
+  }
+
+  function downloadView() {
+    const rows = ["workspace,relationship,resources,module,risk", ...data.affectedWorkspaces.map(node => `${node.name},${node.relation},${node.resources},rds-v5.1.0,${node.relation === "force" ? "replacement" : "review"}`)];
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([rows.join("\n")], { type: "text/csv" }));
+    link.download = "rds-cross-workspace-impact.csv";
+    link.click();
+    URL.revokeObjectURL(link.href);
   }
 
   function openAdvisor() {
@@ -159,7 +217,7 @@
       const feedback = message.feedback ? `<div class="feedback">Did this response answer your question?　<button>Yes</button><button>No</button></div>` : "";
       return `<article class="message advisor-message">${html}${message.evidence && message.evidence.length ? `<div class="references">${message.evidence.map(item => `<a href="#" data-reference>${item}</a>`).join("")}</div>` : ""}${feedback}</article>`;
     }).join("");
-    const prompts = state.advisorJourney === "explorer" ? data.explorerPrompts : data.suggestedPrompts;
+    const prompts = state.advisorJourney === "explorer" ? data.explorerPrompts : state.impactMode ? data.impactPrompts : data.suggestedPrompts;
     promptMenu.innerHTML = `<button id="prompt-toggle" class="prompt-toggle" type="button" aria-expanded="${state.promptsOpen}">Suggested prompts <span>${state.promptsOpen ? "⌃" : "⌄"}</span></button><div class="prompt-list" ${state.promptsOpen ? "" : "hidden"}>${prompts.map(prompt => `<button data-prompt="${prompt}">${prompt}</button>`).join("")}</div>`;
     requestAnimationFrame(() => { conversation.scrollTop = conversation.scrollHeight; });
   }
@@ -195,6 +253,17 @@
     if (action?.dataset.action === "open-initial") { openAdvisor(); initializeAdvisor(); }
     if (action?.dataset.action === "show-impact") { setView("explorer", { impactMode: true }); openAdvisor(); }
     if (action?.dataset.action === "ask-advisor") { openAdvisor(); input.focus(); }
+    if (action?.dataset.action === "toggle-browse") { state.browseOpen = !state.browseOpen; renderMain(); }
+    if (action?.dataset.action === "toggle-explorer-panel") { state.explorerPanelHidden = !state.explorerPanelHidden; renderMain(); }
+    if (action?.dataset.action === "saved-views") { state.modal = "saved-views"; state.browseOpen = false; renderMain(); }
+    if (action?.dataset.action === "save-view") { state.modal = "save-view"; renderMain(); }
+    if (action?.dataset.action === "confirm-save") { state.viewSaved = true; state.modal = null; renderMain(); }
+    if (action?.dataset.action === "download-view") downloadView();
+    if (action?.dataset.action === "close-modal") { state.modal = null; renderMain(); }
+    if (action?.dataset.action === "clear-node") { state.selectedNode = null; renderMain(); }
+
+    const display = event.target.closest("[data-display]");
+    if (display) { state.explorerDisplay = display.dataset.display; renderMain(); }
 
     const prompt = event.target.closest("[data-prompt]");
     if (prompt) ask(prompt.dataset.prompt);
@@ -208,8 +277,8 @@
 
     const node = event.target.closest("[data-node]");
     if (node) {
-      document.querySelectorAll(".graph-node").forEach(item => item.classList.remove("is-focused"));
-      node.classList.add("is-focused");
+      state.selectedNode = node.dataset.node;
+      renderMain();
     }
   });
 
