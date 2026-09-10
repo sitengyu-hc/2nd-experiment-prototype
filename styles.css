@@ -26,7 +26,7 @@ button { color: inherit; }
   padding: 0 16px; gap: 24px; position: relative; z-index: 20;
 }
 .brand { display: flex; align-items: center; gap: 10px; color: #fff; background: none; border: 0; font-weight: 700; cursor: pointer; }
-.brand img { width: 148px; height: 30px; object-fit: contain; object-position: left center; }
+.brand img { width: 148px; height: 30px; object-fit: contain; object-position: left center; filter: brightness(0) invert(1); }
 .brand .chevron { color: #aeb1b7; }
 .top-actions { display: flex; gap: 10px; align-items: center; margin-left: auto; }
 .icon-button, .avatar { height: 34px; min-width: 34px; border: 1px solid #555964; border-radius: 5px; background: transparent; color: #fff; }
