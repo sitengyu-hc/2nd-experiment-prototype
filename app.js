@@ -10,7 +10,7 @@
     impactMode: false,
     advisorJourney: "run",
     navCollapsed: false,
-    promptsOpen: false,
+    promptsOpen: true,
     explorerDisplay: "graph",
     browseOpen: false,
     explorerPanelHidden: false,
@@ -41,6 +41,7 @@
     if (options.advisorJourney && options.advisorJourney !== state.advisorJourney) {
       state.advisorJourney = options.advisorJourney;
       state.messages = [];
+      state.promptsOpen = true;
       initializeAdvisor();
     }
     renderMain();
@@ -247,6 +248,7 @@
         impactMode: false,
         advisorJourney: directExplorerEntry ? "explorer" : "run"
       });
+      if (directExplorerEntry) closeAdvisor();
     }
 
     const action = event.target.closest("[data-action]");
