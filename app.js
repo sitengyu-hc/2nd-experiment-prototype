@@ -94,7 +94,7 @@
         <div class="breadcrumbs">CoolCorp　/　Explorer　/　<strong>${state.impactMode ? "Impact analysis" : "Types"}</strong></div>
         <h1>${icon("explorer")} Explorer</h1><p>Explore your data to analyze your organization's Terraform usage.</p>
         <label class="field-label">BROWSE</label><button class="select-control">Types, Use cases and Saved views <span>⌄</span></button>
-        ${state.impactMode ? '<div class="filter-chip">×　Affected by RDS module v5.1.0　<strong>5</strong></div>' : '<label class="explorer-query">Ask Advisor to query views... <button>➤</button></label>'}
+        ${state.impactMode ? '<div class="filter-chip">×　Affected by RDS module v5.1.0　<strong>5</strong></div>' : '<button class="ask-advisor" data-action="ask-advisor">✦ Ask Advisor</button>'}
         <label class="field-label">TRY THE FOLLOWING QUERIES BASED ON YOUR USAGE</label>
         <button class="query-row">▤　Drifted Workspaces <span>25</span></button><button class="query-row">▤　Workspaces with failed checks <span>25</span></button><button class="query-row">▤　Policy sets with failures <span>12</span></button><button class="query-row">▤　Top module versions <span>4</span></button>
       </div>
@@ -192,6 +192,7 @@
     const action = event.target.closest("[data-action]");
     if (action?.dataset.action === "open-initial") { openAdvisor(); initializeAdvisor(); }
     if (action?.dataset.action === "show-impact") { setView("explorer", { impactMode: true }); openAdvisor(); }
+    if (action?.dataset.action === "ask-advisor") { openAdvisor(); input.focus(); }
 
     const prompt = event.target.closest("[data-prompt]");
     if (prompt) ask(prompt.dataset.prompt);
