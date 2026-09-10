@@ -141,7 +141,9 @@ tr.clickable:hover { background: #f1f6ff; }
 .feedback button { border: 0; background: transparent; color: #075bd8; font-size: 11px; }
 .composer-wrap { flex-shrink: 0; border-top: 1px solid var(--border); padding: 0 12px 9px; background: #fff; }
 .prompt-toggle { width: 100%; display: flex; justify-content: space-between; border: 0; background: #fff; padding: 12px 4px 8px; color: #515562; font-weight: 650; font-size: 12px; }
+.prompt-toggle { cursor: pointer; }
 .prompt-list { display: grid; gap: 6px; padding-bottom: 9px; }
+.prompt-list[hidden] { display: none; }
 .prompt-list button { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: #fff; text-align: left; padding: 8px 10px; cursor: pointer; font-size: 12px; }
 .prompt-list button:hover { border-color: #7651f6; background: #f8f5ff; }
 .composer { display: flex; align-items: center; gap: 7px; }

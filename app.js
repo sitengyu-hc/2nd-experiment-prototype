@@ -9,7 +9,8 @@
     messages: [],
     impactMode: false,
     advisorJourney: "run",
-    navCollapsed: false
+    navCollapsed: false,
+    promptsOpen: false
   };
 
   const main = document.querySelector("#main-content");
@@ -131,6 +132,7 @@
 
   function ask(question) {
     const response = getResponse(question);
+    state.promptsOpen = false;
     state.messages.push({ role: "user", text: question });
     state.messages.push({ role: "advisor", ...response });
     renderConversation();
@@ -158,7 +160,7 @@
       return `<article class="message advisor-message">${html}${message.evidence && message.evidence.length ? `<div class="references">${message.evidence.map(item => `<a href="#" data-reference>${item}</a>`).join("")}</div>` : ""}${feedback}</article>`;
     }).join("");
     const prompts = state.advisorJourney === "explorer" ? data.explorerPrompts : data.suggestedPrompts;
-    promptMenu.innerHTML = `<button id="prompt-toggle" class="prompt-toggle">Suggested prompts <span>⌃</span></button><div class="prompt-list">${prompts.map(prompt => `<button data-prompt="${prompt}">${prompt}</button>`).join("")}</div>`;
+    promptMenu.innerHTML = `<button id="prompt-toggle" class="prompt-toggle" type="button" aria-expanded="${state.promptsOpen}">Suggested prompts <span>${state.promptsOpen ? "⌃" : "⌄"}</span></button><div class="prompt-list" ${state.promptsOpen ? "" : "hidden"}>${prompts.map(prompt => `<button data-prompt="${prompt}">${prompt}</button>`).join("")}</div>`;
     requestAnimationFrame(() => { conversation.scrollTop = conversation.scrollHeight; });
   }
 
@@ -196,6 +198,11 @@
 
     const prompt = event.target.closest("[data-prompt]");
     if (prompt) ask(prompt.dataset.prompt);
+
+    if (event.target.closest("#prompt-toggle")) {
+      state.promptsOpen = !state.promptsOpen;
+      renderConversation();
+    }
 
     if (event.target.closest("[data-reference]")) event.preventDefault();
 
