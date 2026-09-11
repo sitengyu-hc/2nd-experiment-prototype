@@ -109,7 +109,7 @@
         <button class="hud-hide" data-action="toggle-explorer-panel">HIDE</button>
         <div class="breadcrumbs">CoolCorp　/　Explorer　/　<strong>${state.impactMode ? "Impact analysis" : "Types"}</strong></div>
         <h1>${icon("explorer")} Explorer</h1><p>Explore your data to analyze your organization's Terraform usage.</p>
-        ${compact ? compactExplorerControls() : `<label class="field-label">VIEW MODE</label><div class="view-toggle"><button data-display="graph" class="${state.explorerDisplay === "graph" ? "active" : ""}">Graph</button><button data-display="table" class="${state.explorerDisplay === "table" ? "active" : ""}">Table View</button></div><label class="field-label">BROWSE</label><button class="select-control" data-action="toggle-browse">Types, Use cases and Saved views <span>⌄</span></button>${state.browseOpen ? browseMenu() : ""}${state.impactMode ? impactViewControls() : defaultExplorerControls()}`}
+        ${compact ? compactExplorerControls() : `<label class="field-label">VIEW MODE</label><div class="view-toggle"><button data-display="graph" class="${state.explorerDisplay === "graph" ? "active" : ""}">Graph</button><button data-display="table" class="${state.explorerDisplay === "table" ? "active" : ""}">Table View</button></div><label class="field-label">BROWSE</label><div class="browse-control"><button class="select-control" data-action="toggle-browse" aria-expanded="${state.browseOpen}">Types, Use cases and Saved views <span>${state.browseOpen ? "⌃" : "⌄"}</span></button>${state.browseOpen ? browseMenu() : ""}</div>${state.impactMode ? impactViewControls() : defaultExplorerControls()}`}
       </section>
       <button class="hud-show" data-action="toggle-explorer-panel">VIEW</button>
       ${state.impactMode ? (state.explorerDisplay === "graph" ? topologyCanvas() : impactTable()) : state.explorerQuery ? explorerQueryVisualization() : `<div class="empty-explorer"><div class="empty-icon">⌘</div><strong>Get started.</strong><span>Select a Type or Use case to explore your infrastructure.</span></div>`}
@@ -119,19 +119,10 @@
   }
 
   function defaultExplorerControls() {
-    return `<div class="query-builder"><div class="query-builder-heading"><span>QUERY BUILDER</span><button data-action="clear-query">Clear</button></div>
-      <div class="condition-row"><strong>WHERE</strong><select><option>Run status</option><option>Provider</option><option>Terraform version</option></select><select><option>is</option><option>contains</option><option>is not</option></select><select><option>Failed checks</option><option>Applied</option><option>Planning</option></select></div>
-      <button class="add-condition">＋ Add condition</button>
-      <form id="natural-query-form" class="natural-query"><label for="natural-query-input">Or describe what you're looking for</label><div><input id="natural-query-input" placeholder="e.g. production workspaces using AWS 5.x" value="${state.queryDraft ? escapeHtml(state.queryDraft) : ""}"><button>Interpret</button></div></form>
-      ${state.queryConditions.length ? interpretedConditions() : ""}
-      <button class="run-query" data-action="run-query">Run query</button></div>
+    return `<form id="natural-query-form" class="natural-query"><label for="natural-query-input">Enter a natural language query</label><input id="natural-query-input" placeholder="e.g. production workspaces using AWS 5.x" value="${state.queryDraft ? escapeHtml(state.queryDraft) : ""}"></form>
       <label class="field-label">TRY THE FOLLOWING QUERIES BASED ON YOUR USAGE.</label>
       <div class="query-list"><button class="query-row" data-query-template="Which workspaces use AWS provider version 5.x?">AWS 5.x workspaces <span>18</span></button><button class="query-row" data-query-template="How many EC2 instances exist across my organization?">EC2 instances by workspace <span>47</span></button><button class="query-row" data-query-template="What resources depend on workspace X?">Workspace dependencies <span>7</span></button><button class="query-row" data-query-template="Show resources using module Z.">Resources using module Z <span>32</span></button></div>
       ${state.explorerQuery ? directReturnedNodes() : ""}`;
-  }
-
-  function interpretedConditions() {
-    return `<div class="interpreted-query"><span>✦ SUGGESTED BY ADVISOR</span>${state.queryConditions.map((condition, index) => `<div><strong>${index ? "AND" : "WHERE"}</strong><code>${condition}</code></div>`).join("")}<small>Review these conditions before running the query.</small></div>`;
   }
 
   function directReturnedNodes() {
@@ -318,6 +309,11 @@
   }
 
   document.addEventListener("click", event => {
+    if (state.browseOpen && !event.target.closest(".browse-control")) {
+      state.browseOpen = false;
+      renderMain();
+    }
+
     const nav = event.target.closest("[data-nav]");
     if (nav) {
       const directExplorerEntry = nav.dataset.nav === "explorer";
@@ -371,7 +367,7 @@
     const template = event.target.closest("[data-query-template]");
     if (template) {
       state.queryDraft = template.dataset.queryTemplate;
-      state.queryConditions = conditionsForQuery(state.queryDraft);
+      state.explorerQuery = state.queryDraft;
       renderMain();
     }
 
@@ -401,7 +397,7 @@
     event.preventDefault();
     state.queryDraft = document.querySelector("#natural-query-input").value.trim();
     if (!state.queryDraft) return;
-    state.queryConditions = conditionsForQuery(state.queryDraft);
+    state.explorerQuery = state.queryDraft;
     renderMain();
   });
 
