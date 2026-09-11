@@ -16,7 +16,8 @@
     explorerPanelHidden: false,
     selectedNode: null,
     modal: null,
-    viewSaved: false
+    viewSaved: false,
+    explorerQuery: null
   };
 
   const main = document.querySelector("#main-content");
@@ -109,7 +110,7 @@
         ${state.impactMode ? impactViewControls() : defaultExplorerControls()}
       </section>
       <button class="hud-show" data-action="toggle-explorer-panel">VIEW</button>
-      ${state.impactMode ? (state.explorerDisplay === "graph" ? topologyCanvas() : impactTable()) : `<div class="empty-explorer"><div class="empty-icon">⌘</div><strong>Get started.</strong><span>Select a Type or Use case to explore your infrastructure.</span></div>`}
+      ${state.impactMode ? (state.explorerDisplay === "graph" ? topologyCanvas() : impactTable()) : state.explorerQuery ? explorerQueryVisualization() : `<div class="empty-explorer"><div class="empty-icon">⌘</div><strong>Get started.</strong><span>Select a Type or Use case to explore your infrastructure.</span></div>`}
       ${state.modal === "saved-views" ? savedViewsModal() : ""}
       ${state.modal === "save-view" ? saveViewModal() : ""}
     </div>`;
@@ -119,6 +120,23 @@
     return `<button class="explorer-query-link" data-action="ask-advisor">Enter your own query</button>
       <label class="field-label">TRY THE FOLLOWING QUERIES BASED ON YOUR USAGE.</label>
       <div class="query-list"><button class="query-row">Workspaces with failed checks <span>25</span></button><button class="query-row">Policy sets with failures <span>12</span></button><button class="query-row">Top module versions <span>4</span></button><button class="query-row">Providers by workspace count <span>8</span></button><button class="query-row">Resources by type <span>42</span></button><button class="query-row">Top Terraform versions <span>6</span></button></div>`;
+  }
+
+  function explorerQueryVisualization() {
+    const queryViews = {
+      "How many EC2 instances exist across my organization?": { title: "EC2 instances across CoolCorp", total: "47 instances", type: "resource", nodes: ["prod-web-01", "prod-api-02", "staging-web", "analytics-worker", "sandbox-testing", "qa-backend"] },
+      "Which workspaces use AWS provider version 5.x?": { title: "AWS provider 5.x usage", total: "18 workspaces", type: "provider", nodes: ["my-workspace", "prod-payments", "prod-catalog", "staging-web", "analytics-worker", "qa-backend"] },
+      "What resources depend on workspace X?": { title: "Workspace X dependencies", total: "7 resources", type: "dependent", nodes: ["vpc-main", "security-groups", "database-endpoint", "prod-api", "catalog-service", "analytics-worker"] },
+      "What is the cross workspace impact of workspace Y?": { title: "Workspace Y cross-workspace impact", total: "5 workspaces", type: "impact", nodes: ["workspace-y", "prod-payments", "prod-catalog", "staging-web", "analytics-worker", "qa-backend"] },
+      "Show resources using module Z.": { title: "Resources using module Z", total: "32 workspaces", type: "module", nodes: ["module-z", "prod-web", "prod-api", "staging-web", "analytics-worker", "sandbox-testing"] }
+    };
+    const view = queryViews[state.explorerQuery] || queryViews["How many EC2 instances exist across my organization?"];
+    if (state.explorerDisplay === "table") {
+      return `<div class="explorer-table query-results"><div class="table-topline"><strong>Results: ${view.total}</strong></div><table><thead><tr><th>Name</th><th>Type</th><th>Workspace</th><th>Status</th></tr></thead><tbody>${view.nodes.map((node, index) => `<tr><td><strong>${node}</strong></td><td>${view.type}</td><td>${index ? "CoolCorp" : "Selected"}</td><td>Active</td></tr>`).join("")}</tbody></table></div>`;
+    }
+    const positions = [[50, 48], [68, 25], [79, 46], [68, 70], [35, 70], [27, 34]];
+    const edges = positions.slice(1).map(([x, y]) => `<line x1="50%" y1="48%" x2="${x}%" y2="${y}%"/>`).join("");
+    return `<div class="query-visualization"><div class="query-result-title"><span>QUERY RESULT</span><strong>${view.title}</strong><small>${view.total}</small></div><svg aria-hidden="true">${edges}</svg>${view.nodes.map((node, index) => `<button class="query-node ${view.type} ${index === 0 ? "center" : ""}" style="left:${positions[index][0]}%;top:${positions[index][1]}%"><span>${index === 0 ? "◎" : "◇"}</span><strong>${node}</strong><small>${index === 0 ? "Selected" : view.type}</small></button>`).join("")}<div class="query-legend"><span><i></i>${view.type}</span><span><i></i>Related result</span></div></div>`;
   }
 
   function impactViewControls() {
@@ -194,6 +212,10 @@
     state.promptsOpen = false;
     state.messages.push({ role: "user", text: question });
     state.messages.push({ role: "advisor", ...response });
+    if (state.view === "explorer" && state.advisorJourney === "explorer") {
+      state.explorerQuery = question;
+      renderMain();
+    }
     renderConversation();
   }
 
@@ -215,8 +237,8 @@
             '<div class="current-location"><span>✓ Viewing 5 affected workspaces in Explorer</span><button class="text-link" data-nav="run">← Back to failed run</button></div>'
           )
         : message.html;
-      const feedback = message.feedback ? `<div class="feedback">Did this response answer your question?　<button>Yes</button><button>No</button></div>` : "";
-      return `<article class="message advisor-message">${html}${message.evidence && message.evidence.length ? `<div class="references">${message.evidence.map(item => `<a href="#" data-reference>${item}</a>`).join("")}</div>` : ""}${feedback}</article>`;
+      const feedback = message.feedback ? `<div class="feedback"><span>Did this response answer your question?</span><button aria-label="Thumbs up" title="Thumbs up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v11H3V10h4Zm0 10h10.4a2 2 0 0 0 2-1.7l1.3-7A2 2 0 0 0 18.8 9H14l.7-3.4A2.2 2.2 0 0 0 12.5 3L7 10Z"/></svg></button><button aria-label="Thumbs down" title="Thumbs down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V3H3v11h4Zm0-10h10.4a2 2 0 0 1 2 1.7l1.3 7a2 2 0 0 1-1.9 2.3H14l.7 3.4a2.2 2.2 0 0 1-2.2 2.6L7 14Z"/></svg></button></div>` : "";
+      return `<article class="message advisor-message">${html}${message.evidence && message.evidence.length ? `<div class="references"><span>References</span>${message.evidence.map(item => `<a href="#" data-reference>${item}</a>`).join("")}</div>` : ""}${feedback}</article>`;
     }).join("");
     const prompts = state.advisorJourney === "explorer" ? data.explorerPrompts : state.impactMode ? data.impactPrompts : data.suggestedPrompts;
     promptMenu.innerHTML = `<button id="prompt-toggle" class="prompt-toggle" type="button" aria-expanded="${state.promptsOpen}">Suggested prompts <span>${state.promptsOpen ? "⌃" : "⌄"}</span></button><div class="prompt-list" ${state.promptsOpen ? "" : "hidden"}>${prompts.map(prompt => `<button data-prompt="${prompt}">${prompt}</button>`).join("")}</div>`;
