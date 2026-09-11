@@ -17,7 +17,10 @@
     selectedNode: null,
     modal: null,
     viewSaved: false,
-    explorerQuery: null
+    explorerQuery: null,
+    explorerMode: "explore",
+    queryDraft: null,
+    queryConditions: []
   };
 
   const main = document.querySelector("#main-content");
@@ -25,6 +28,8 @@
   const conversation = document.querySelector("#conversation");
   const promptMenu = document.querySelector("#prompt-menu");
   const input = document.querySelector("#advisor-input");
+  const advisorTitle = document.querySelector("#advisor-title");
+  const advisorComposer = document.querySelector("#advisor-composer");
 
   const icon = (name) => {
     const paths = {
@@ -98,16 +103,13 @@
   }
 
   function explorerView() {
-    return `<div class="explorer-page ${state.explorerPanelHidden ? "panel-hidden" : ""}">
+    const compact = state.explorerMode !== "explore";
+    return `<div class="explorer-page explorer-mode-${state.explorerMode} ${state.explorerPanelHidden ? "panel-hidden" : ""}">
       <section class="explorer-controls">
         <button class="hud-hide" data-action="toggle-explorer-panel">HIDE</button>
         <div class="breadcrumbs">CoolCorp　/　Explorer　/　<strong>${state.impactMode ? "Impact analysis" : "Types"}</strong></div>
         <h1>${icon("explorer")} Explorer</h1><p>Explore your data to analyze your organization's Terraform usage.</p>
-        <label class="field-label">VIEW MODE</label>
-        <div class="view-toggle"><button data-display="graph" class="${state.explorerDisplay === "graph" ? "active" : ""}">Graph</button><button data-display="table" class="${state.explorerDisplay === "table" ? "active" : ""}">Table View</button></div>
-        <label class="field-label">BROWSE</label><button class="select-control" data-action="toggle-browse">Types, Use cases and Saved views <span>⌄</span></button>
-        ${state.browseOpen ? browseMenu() : ""}
-        ${state.impactMode ? impactViewControls() : defaultExplorerControls()}
+        ${compact ? compactExplorerControls() : `<label class="field-label">VIEW MODE</label><div class="view-toggle"><button data-display="graph" class="${state.explorerDisplay === "graph" ? "active" : ""}">Graph</button><button data-display="table" class="${state.explorerDisplay === "table" ? "active" : ""}">Table View</button></div><label class="field-label">BROWSE</label><button class="select-control" data-action="toggle-browse">Types, Use cases and Saved views <span>⌄</span></button>${state.browseOpen ? browseMenu() : ""}${state.impactMode ? impactViewControls() : defaultExplorerControls()}`}
       </section>
       <button class="hud-show" data-action="toggle-explorer-panel">VIEW</button>
       ${state.impactMode ? (state.explorerDisplay === "graph" ? topologyCanvas() : impactTable()) : state.explorerQuery ? explorerQueryVisualization() : `<div class="empty-explorer"><div class="empty-icon">⌘</div><strong>Get started.</strong><span>Select a Type or Use case to explore your infrastructure.</span></div>`}
@@ -117,9 +119,30 @@
   }
 
   function defaultExplorerControls() {
-    return `<button class="explorer-query-link" data-action="ask-advisor">Enter your own query</button>
+    return `<div class="query-builder"><div class="query-builder-heading"><span>QUERY BUILDER</span><button data-action="clear-query">Clear</button></div>
+      <div class="condition-row"><strong>WHERE</strong><select><option>Run status</option><option>Provider</option><option>Terraform version</option></select><select><option>is</option><option>contains</option><option>is not</option></select><select><option>Failed checks</option><option>Applied</option><option>Planning</option></select></div>
+      <button class="add-condition">＋ Add condition</button>
+      <form id="natural-query-form" class="natural-query"><label for="natural-query-input">Or describe what you're looking for</label><div><input id="natural-query-input" placeholder="e.g. production workspaces using AWS 5.x" value="${state.queryDraft ? escapeHtml(state.queryDraft) : ""}"><button>Interpret</button></div></form>
+      ${state.queryConditions.length ? interpretedConditions() : ""}
+      <button class="run-query" data-action="run-query">Run query</button></div>
       <label class="field-label">TRY THE FOLLOWING QUERIES BASED ON YOUR USAGE.</label>
-      <div class="query-list"><button class="query-row">Workspaces with failed checks <span>25</span></button><button class="query-row">Policy sets with failures <span>12</span></button><button class="query-row">Top module versions <span>4</span></button><button class="query-row">Providers by workspace count <span>8</span></button><button class="query-row">Resources by type <span>42</span></button><button class="query-row">Top Terraform versions <span>6</span></button></div>`;
+      <div class="query-list"><button class="query-row" data-query-template="Which workspaces use AWS provider version 5.x?">AWS 5.x workspaces <span>18</span></button><button class="query-row" data-query-template="How many EC2 instances exist across my organization?">EC2 instances by workspace <span>47</span></button><button class="query-row" data-query-template="What resources depend on workspace X?">Workspace dependencies <span>7</span></button><button class="query-row" data-query-template="Show resources using module Z.">Resources using module Z <span>32</span></button></div>
+      ${state.explorerQuery ? directReturnedNodes() : ""}`;
+  }
+
+  function interpretedConditions() {
+    return `<div class="interpreted-query"><span>✦ SUGGESTED BY ADVISOR</span>${state.queryConditions.map((condition, index) => `<div><strong>${index ? "AND" : "WHERE"}</strong><code>${condition}</code></div>`).join("")}<small>Review these conditions before running the query.</small></div>`;
+  }
+
+  function directReturnedNodes() {
+    const names = ["my-workspace", "prod-payments", "prod-catalog", "staging-web", "analytics-worker"];
+    return `<div class="returned-heading"><span>RETURNED NODES</span><strong>${names.length}</strong></div><div class="returned-nodes">${names.map(name => `<button data-node="${name}"><i class="node-dot"></i><span>${name}</span><small>Workspace</small></button>`).join("")}</div>`;
+  }
+
+  function compactExplorerControls() {
+    const title = state.impactMode ? "RDS module cross-workspace impact" : state.explorerQuery || "Current Explorer query";
+    const count = state.impactMode ? "5 workspaces" : "Query results";
+    return `<div class="compact-query"><span>ACTIVE QUERY</span><strong>${escapeHtml(title)}</strong><small>${count}</small>${state.queryConditions.length ? `<div>${state.queryConditions.map(item => `<code>${item}</code>`).join("")}</div>` : ""}<button data-action="return-explore">← Back to query and results</button></div>`;
   }
 
   function explorerQueryVisualization() {
@@ -136,7 +159,7 @@
     }
     const positions = [[50, 48], [68, 25], [79, 46], [68, 70], [35, 70], [27, 34]];
     const edges = positions.slice(1).map(([x, y]) => `<line x1="50%" y1="48%" x2="${x}%" y2="${y}%"/>`).join("");
-    return `<div class="query-visualization"><div class="query-result-title"><span>QUERY RESULT</span><strong>${view.title}</strong><small>${view.total}</small></div><svg aria-hidden="true">${edges}</svg>${view.nodes.map((node, index) => `<button class="query-node ${view.type} ${index === 0 ? "center" : ""}" style="left:${positions[index][0]}%;top:${positions[index][1]}%"><span>${index === 0 ? "◎" : "◇"}</span><strong>${node}</strong><small>${index === 0 ? "Selected" : view.type}</small></button>`).join("")}<div class="query-legend"><span><i></i>${view.type}</span><span><i></i>Related result</span></div></div>`;
+    return `<div class="query-visualization"><div class="query-result-title"><span>QUERY RESULT</span><strong>${view.title}</strong><small>${view.total}</small></div><svg aria-hidden="true">${edges}</svg>${view.nodes.map((node, index) => `<button class="query-node ${view.type} ${index === 0 ? "center" : ""}" style="left:${positions[index][0]}%;top:${positions[index][1]}%" data-node="${node}"><span>${index === 0 ? "◎" : "◇"}</span><strong>${node}</strong><small>${index === 0 ? "Selected" : view.type}</small></button>`).join("")}<div class="query-legend"><span><i></i>${view.type}</span><span><i></i>Related result</span></div></div>`;
   }
 
   function impactViewControls() {
@@ -157,12 +180,7 @@
       const x1 = center.x * 10, y1 = center.y * 6.5, x2 = node.x * 10, y2 = node.y * 6.5;
       return `<path class="${node.relation}" d="M${x1} ${y1} C${(x1 + x2) / 2} ${y1}, ${(x1 + x2) / 2} ${y2}, ${x2} ${y2}" marker-end="url(#arrow-${node.relation})"/>`;
     }).join("");
-    const selected = data.affectedWorkspaces.find(node => node.name === state.selectedNode);
-    return `<div class="topology" aria-label="Affected workspace topology"><div class="graph-summary"><strong>Cross-workspace impact</strong><span>5 workspaces</span><span class="risk">2 production databases at risk</span></div><svg class="edges" viewBox="0 0 1000 650" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="arrow-force" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker><marker id="arrow-dependent" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker></defs>${lines}</svg>${data.affectedWorkspaces.map(node => `<button class="graph-node ${node.relation} ${state.selectedNode === node.name ? "is-focused" : ""}" style="left:${node.x}%;top:${node.y}%" data-node="${node.name}"><span class="node-symbol">${icon("database")}</span><strong>${node.name}</strong><small>${node.resources} resources</small>${node.relation === "force" ? '<i>!</i>' : ""}</button>`).join("")}${selected ? nodeDetail(selected) : ""}<div class="graph-tools"><button title="Zoom in">+</button><button title="Zoom out">−</button><button title="Reset zoom">FIT</button><button title="Refresh">↻</button></div><div class="layout-tools"><button class="active">Arc</button><button>Connectors</button><button class="active">Light</button><button>Dark</button></div><div class="legend"><span><i class="workspace-key"></i> Workspace</span><span><i class="selected-key"></i> Selected</span><span><i class="dependent-key"></i> Direct dependent</span><span><i class="force-key"></i> Replacement risk</span></div></div>`;
-  }
-
-  function nodeDetail(node) {
-    return `<aside class="node-detail"><button data-action="clear-node" aria-label="Close">×</button><span>WORKSPACE</span><h3>${node.name}</h3><dl><dt>Resources</dt><dd>${node.resources}</dd><dt>Relationship</dt><dd>${node.relation === "force" ? "Replacement risk" : node.relation === "selected" ? "Selected run" : "Direct dependent"}</dd><dt>Module</dt><dd>rds v5.1.0</dd></dl><a href="#" data-reference>View resources →</a></aside>`;
+    return `<div class="topology" aria-label="Affected workspace topology"><div class="graph-summary"><strong>Cross-workspace impact</strong><span>5 workspaces</span><span class="risk">2 production databases at risk</span></div><svg class="edges" viewBox="0 0 1000 650" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="arrow-force" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker><marker id="arrow-dependent" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker></defs>${lines}</svg>${data.affectedWorkspaces.map(node => `<button class="graph-node ${node.relation} ${state.selectedNode === node.name ? "is-focused" : ""}" style="left:${node.x}%;top:${node.y}%" data-node="${node.name}"><span class="node-symbol">${icon("database")}</span><strong>${node.name}</strong><small>${node.resources} resources</small>${node.relation === "force" ? '<i>!</i>' : ""}</button>`).join("")}<div class="graph-tools"><button title="Zoom in">+</button><button title="Zoom out">−</button><button title="Reset zoom">FIT</button><button title="Refresh">↻</button></div><div class="layout-tools"><button class="active">Arc</button><button>Connectors</button><button class="active">Light</button><button>Dark</button></div><div class="legend"><span><i class="workspace-key"></i> Workspace</span><span><i class="selected-key"></i> Selected</span><span><i class="dependent-key"></i> Direct dependent</span><span><i class="force-key"></i> Replacement risk</span></div></div>`;
   }
 
   function impactTable() {
@@ -188,16 +206,52 @@
 
   function openAdvisor() {
     state.advisorOpen = true;
+    if (state.view === "explorer") state.explorerMode = "converse";
     advisor.classList.add("is-open");
     document.body.classList.add("advisor-open");
     document.querySelector("#advisor-toggle span").textContent = "Close Advisor";
+    renderMain();
+    renderAdvisorPanel();
   }
 
   function closeAdvisor() {
     state.advisorOpen = false;
+    if (state.view === "explorer") state.explorerMode = "explore";
     advisor.classList.remove("is-open");
     document.body.classList.remove("advisor-open");
     document.querySelector("#advisor-toggle span").textContent = "Open Advisor";
+    renderMain();
+    renderAdvisorPanel();
+  }
+
+  function openInspector(nodeName) {
+    state.selectedNode = nodeName;
+    state.explorerMode = "inspect";
+    state.advisorOpen = true;
+    advisor.classList.add("is-open", "is-inspector");
+    document.body.classList.add("advisor-open");
+    document.querySelector("#advisor-toggle span").textContent = "Close details";
+    renderMain();
+    renderAdvisorPanel();
+  }
+
+  function renderAdvisorPanel() {
+    const inspector = state.view === "explorer" && state.explorerMode === "inspect";
+    advisor.classList.toggle("is-inspector", inspector);
+    advisorTitle.textContent = inspector ? "Workspace details" : "Advisor";
+    advisorComposer.hidden = inspector;
+    if (inspector) {
+      conversation.innerHTML = inspectorView();
+    } else {
+      renderConversation();
+    }
+  }
+
+  function inspectorView() {
+    const node = data.affectedWorkspaces.find(item => item.name === state.selectedNode);
+    const resources = node?.resources || 42;
+    const relation = node ? (node.relation === "force" ? "Replacement risk" : node.relation === "selected" ? "Selected result" : "Direct dependent") : "Query result";
+    return `<div class="inspector-content"><span class="inspector-type">WORKSPACE</span><h2>${escapeHtml(state.selectedNode || "Workspace")}</h2><p>Selected from the current Explorer result set.</p><dl><dt>Resources</dt><dd>${resources}</dd><dt>Relationship</dt><dd>${relation}</dd><dt>Active query</dt><dd>${state.impactMode ? "RDS impact" : "Current filters"}</dd></dl><div class="inspector-actions"><button data-action="explain-node">✦ Explain this result</button><button data-action="show-node-impact">Show cross-workspace impact</button><button data-action="compare-node">Compare workspaces</button><button data-action="refine-query">Refine current query</button></div><button class="back-results" data-action="return-explore">← Back to results</button></div>`;
   }
 
   function initializeAdvisor() {
@@ -229,6 +283,7 @@
   }
 
   function renderConversation() {
+    if (state.view === "explorer" && state.explorerMode === "inspect") return;
     conversation.innerHTML = state.messages.map(message => {
       if (message.role === "user") return `<div class="message user-message"><span>♧</span><p>${escapeHtml(message.text)}</p></div>`;
       const html = state.view === "explorer" && state.impactMode
@@ -285,12 +340,40 @@
     if (action?.dataset.action === "download-view") downloadView();
     if (action?.dataset.action === "close-modal") { state.modal = null; renderMain(); }
     if (action?.dataset.action === "clear-node") { state.selectedNode = null; renderMain(); }
+    if (action?.dataset.action === "return-explore") { closeAdvisor(); state.selectedNode = null; renderMain(); }
+    if (action?.dataset.action === "clear-query") { state.queryDraft = null; state.queryConditions = []; state.explorerQuery = null; renderMain(); }
+    if (action?.dataset.action === "run-query") {
+      state.explorerQuery = state.queryDraft || "Which workspaces use AWS provider version 5.x?";
+      renderMain();
+    }
+    if (["explain-node", "show-node-impact", "compare-node", "refine-query"].includes(action?.dataset.action)) {
+      const questions = {
+        "explain-node": `Explain why ${state.selectedNode} is in these results`,
+        "show-node-impact": `What is the cross workspace impact of ${state.selectedNode}?`,
+        "compare-node": `Compare ${state.selectedNode} with the other returned workspaces`,
+        "refine-query": `Help me refine the current query around ${state.selectedNode}`
+      };
+      state.explorerMode = "converse";
+      state.promptsOpen = false;
+      state.messages.push({ role: "user", text: questions[action.dataset.action] });
+      state.messages.push({ role: "advisor", type: "answer", html: `<p>I'll use the selected workspace and active Explorer filters as context. The graph and result set remain unchanged while we investigate.</p>`, evidence: ["Current Explorer query", "Selected workspace"] });
+      advisor.classList.remove("is-inspector");
+      renderMain();
+      renderAdvisorPanel();
+    }
 
     const display = event.target.closest("[data-display]");
     if (display) { state.explorerDisplay = display.dataset.display; renderMain(); }
 
     const prompt = event.target.closest("[data-prompt]");
     if (prompt) ask(prompt.dataset.prompt);
+
+    const template = event.target.closest("[data-query-template]");
+    if (template) {
+      state.queryDraft = template.dataset.queryTemplate;
+      state.queryConditions = conditionsForQuery(state.queryDraft);
+      renderMain();
+    }
 
     if (event.target.closest("#prompt-toggle")) {
       state.promptsOpen = !state.promptsOpen;
@@ -301,9 +384,25 @@
 
     const node = event.target.closest("[data-node]");
     if (node) {
-      state.selectedNode = node.dataset.node;
-      renderMain();
+      openInspector(node.dataset.node);
     }
+  });
+
+  function conditionsForQuery(query) {
+    if (query.includes("AWS provider")) return ["Provider is AWS", "Version starts with 5"];
+    if (query.includes("EC2")) return ["Resource type is aws_instance", "Organization is CoolCorp"];
+    if (query.includes("depend")) return ["Depends on workspace X", "Relationship is direct"];
+    if (query.includes("module Z")) return ["Module name is module Z", "Workspace count is not empty"];
+    return ["Name contains production", "Run status is active"];
+  }
+
+  document.addEventListener("submit", event => {
+    if (event.target.id !== "natural-query-form") return;
+    event.preventDefault();
+    state.queryDraft = document.querySelector("#natural-query-input").value.trim();
+    if (!state.queryDraft) return;
+    state.queryConditions = conditionsForQuery(state.queryDraft);
+    renderMain();
   });
 
   document.querySelector("#advisor-toggle").addEventListener("click", () => state.advisorOpen ? closeAdvisor() : openAdvisor());
