@@ -31,7 +31,6 @@ button { color: inherit; }
 .top-actions { display: flex; gap: 10px; align-items: center; margin-left: auto; }
 .icon-button, .avatar { height: 34px; min-width: 34px; border: 1px solid #555964; border-radius: 5px; background: transparent; color: #fff; }
 .avatar { border: 0; background: #6544e9; font-weight: 700; }
-.advisor-toggle { border: 0; border-radius: 6px; padding: 10px 14px; color: #fff; font-weight: 700; cursor: pointer; background: linear-gradient(100deg, #6544e9, #ec2a9b); }
 
 .app-shell { height: calc(100vh - 60px); position: relative; padding-left: var(--side-nav); transition: padding-left .2s ease; }
 #main-content { height: 100%; overflow: auto; outline: none; transition: margin-right .25s ease; }

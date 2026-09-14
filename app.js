@@ -200,7 +200,6 @@
     if (state.view === "explorer") state.explorerMode = "converse";
     advisor.classList.add("is-open");
     document.body.classList.add("advisor-open");
-    document.querySelector("#advisor-toggle span").textContent = "Close Advisor";
     renderMain();
     renderAdvisorPanel();
   }
@@ -210,7 +209,6 @@
     if (state.view === "explorer") state.explorerMode = "explore";
     advisor.classList.remove("is-open");
     document.body.classList.remove("advisor-open");
-    document.querySelector("#advisor-toggle span").textContent = "Open Advisor";
     renderMain();
     renderAdvisorPanel();
   }
@@ -221,7 +219,6 @@
     state.advisorOpen = true;
     advisor.classList.add("is-open", "is-inspector");
     document.body.classList.add("advisor-open");
-    document.querySelector("#advisor-toggle span").textContent = "Close details";
     renderMain();
     renderAdvisorPanel();
   }
@@ -401,7 +398,6 @@
     renderMain();
   });
 
-  document.querySelector("#advisor-toggle").addEventListener("click", () => state.advisorOpen ? closeAdvisor() : openAdvisor());
   document.querySelector("#advisor-close").addEventListener("click", closeAdvisor);
   document.querySelector("#nav-collapse").addEventListener("click", () => {
     state.navCollapsed = !state.navCollapsed;
