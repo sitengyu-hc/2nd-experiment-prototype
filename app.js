@@ -120,8 +120,6 @@
 
   function defaultExplorerControls() {
     return `<form id="natural-query-form" class="natural-query"><label for="natural-query-input">Enter a natural language query</label><input id="natural-query-input" placeholder="e.g. production workspaces using AWS 5.x" value="${state.queryDraft ? escapeHtml(state.queryDraft) : ""}"></form>
-      <label class="field-label">TRY THE FOLLOWING QUERIES BASED ON YOUR USAGE.</label>
-      <div class="query-list"><button class="query-row" data-query-template="Which workspaces use AWS provider version 5.x?">AWS 5.x workspaces <span>18</span></button><button class="query-row" data-query-template="How many EC2 instances exist across my organization?">EC2 instances by workspace <span>47</span></button><button class="query-row" data-query-template="What resources depend on workspace X?">Workspace dependencies <span>7</span></button><button class="query-row" data-query-template="Show resources using module Z.">Resources using module Z <span>32</span></button></div>
       ${state.explorerQuery ? directReturnedNodes() : ""}`;
   }
 
@@ -360,13 +358,6 @@
 
     const prompt = event.target.closest("[data-prompt]");
     if (prompt) ask(prompt.dataset.prompt);
-
-    const template = event.target.closest("[data-query-template]");
-    if (template) {
-      state.queryDraft = template.dataset.queryTemplate;
-      state.explorerQuery = state.queryDraft;
-      renderMain();
-    }
 
     if (event.target.closest("#prompt-toggle")) {
       state.promptsOpen = !state.promptsOpen;

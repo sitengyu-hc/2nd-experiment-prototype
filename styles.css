@@ -179,10 +179,8 @@ tr.clickable:hover { background: #f1f6ff; }
 .compact-query { display: grid; gap: 6px; margin-top: 15px; padding: 12px; border: 1px solid #b8d0ff; border-radius: 7px; background: #edf4ff; }
 .compact-query > span { color: #174ea6; font-size: 9px; font-weight: 700; letter-spacing: .08em; }.compact-query small { color: #656a76; }.compact-query > div { display: flex; flex-wrap: wrap; gap: 5px; }.compact-query code { padding: 4px 6px; border-radius: 3px; background: #fff; color: #174ea6; font-size: 10px; }.compact-query button { border: 0; background: transparent; color: #075bd8; padding: 5px 0 0; text-align: left; font-size: 11px; cursor: pointer; }
 .explorer-mode-inspect .explorer-controls, .explorer-mode-converse .explorer-controls { width: 300px; }
-.select-control, .query-row { width: 100%; background: #fff; border: 1px solid #9095a1; border-radius: 5px; padding: 9px; display: flex; justify-content: space-between; text-align: left; }
-.query-list { max-height: 142px; overflow-y: auto; padding-right: 3px; mask-image: linear-gradient(#000 82%, transparent); }
-.query-row { padding: 7px 9px; margin: 6px 0; border-color: #dedfe3; border-radius: 16px; cursor: pointer; }
-.query-row span, .filter-chip strong { background: #e2e3e6; border-radius: 12px; min-width: 25px; text-align: center; padding: 1px 6px; }
+.select-control { width: 100%; background: #fff; border: 1px solid #9095a1; border-radius: 5px; padding: 9px; display: flex; justify-content: space-between; text-align: left; }
+.filter-chip strong { background: #e2e3e6; border-radius: 12px; min-width: 25px; text-align: center; padding: 1px 6px; }
 .explorer-query-link { display: block; margin-top: 12px; border: 0; background: transparent; padding: 0; color: #075bd8; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .explorer-query-link:hover { color: #043f9e; }
 .filter-chip { display: inline-flex; gap: 6px; align-items: center; margin-top: 12px; border: 1px solid #aeb1b7; border-radius: 15px; padding: 5px 8px; }
