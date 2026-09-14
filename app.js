@@ -262,10 +262,53 @@
 
   function getResponse(question) {
     // Future live-model integration belongs behind this adapter.
-    return data.responses[question] || {
+    return data.responses[question] || simulatedWorkspaceResponse(question);
+  }
+
+  function simulatedWorkspaceResponse(question) {
+    const normalizedQuestion = question.toLowerCase();
+    const drifted = [
+      ["prod-catalog", "Production", "Drift detected 12 minutes ago"],
+      ["staging-web", "Staging", "Drift detected 28 minutes ago"],
+      ["analytics-worker", "Production", "Drift detected 1 hour ago"],
+      ["legacy-migration", "Production", "Drift detected 3 hours ago"],
+      ["sandbox-testing", "Development", "Drift detected yesterday"]
+    ];
+    const production = [
+      ["prod-payments", "Production", "Healthy"],
+      ["prod-catalog", "Production", "Drift detected"],
+      ["analytics-worker", "Production", "Healthy"],
+      ["legacy-migration", "Production", "Needs attention"],
+      ["my-workspace", "Production", "Errored"]
+    ];
+    const failed = [
+      ["my-workspace", "Default Project", "Plan errored"],
+      ["prod-catalog", "Production", "Apply failed"],
+      ["legacy-migration", "Production", "Policy check failed"],
+      ["staging-web", "Staging", "Run failed"],
+      ["sandbox-testing", "Development", "Plan errored"]
+    ];
+    const workspaces = normalizedQuestion.includes("drift") || normalizedQuestion.includes("out of sync")
+      ? drifted
+      : normalizedQuestion.includes("production") || normalizedQuestion.includes("prod")
+        ? production
+        : normalizedQuestion.includes("fail") || normalizedQuestion.includes("error")
+          ? failed
+          : [
+              ["my-workspace", "Default Project", "Active"],
+              ["staging-web", "Staging", "Active"],
+              ["prod-catalog", "Production", "Active"],
+              ["analytics-worker", "Production", "Active"],
+              ["sandbox-testing", "Development", "Active"]
+            ];
+    const title = normalizedQuestion.includes("drift") || normalizedQuestion.includes("out of sync")
+      ? "Five workspaces with drift detected"
+      : "Five workspaces matching your query";
+    return {
       type: "answer",
-      html: `<p>This prototype currently supports the suggested research paths. Try one of the prompts below.</p>`,
-      evidence: []
+      feedback: true,
+      html: `<p>${title}:</p><ul>${workspaces.map(([name, scope, status]) => `<li><strong>${name}</strong> <span>${scope}</span> — ${status}</li>`).join("")}</ul><p>These are simulated Explorer results for this prototype. You can narrow the list by asking about a project, status, or workspace.</p>`,
+      evidence: ["Simulated workspace inventory"]
     };
   }
 
