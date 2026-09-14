@@ -149,7 +149,7 @@
     }
     const positions = [[50, 48], [68, 25], [79, 46], [68, 70], [35, 70], [27, 34]];
     const edges = positions.slice(1).map(([x, y]) => `<line x1="50%" y1="48%" x2="${x}%" y2="${y}%"/>`).join("");
-    return `<div class="query-visualization"><div class="query-result-title"><span>QUERY RESULT</span><strong>${view.title}</strong><small>${view.total}</small></div><svg aria-hidden="true">${edges}</svg>${view.nodes.map((node, index) => `<button class="query-node ${view.type} ${index === 0 ? "center" : ""}" style="left:${positions[index][0]}%;top:${positions[index][1]}%" data-node="${node}"><span>${index === 0 ? "◎" : "◇"}</span><strong>${node}</strong><small>${index === 0 ? "Selected" : view.type}</small></button>`).join("")}<div class="query-legend"><span><i></i>${view.type}</span><span><i></i>Related result</span></div></div>`;
+    return `<div class="query-visualization"><svg aria-hidden="true">${edges}</svg>${view.nodes.map((node, index) => `<button class="query-node ${view.type} ${index === 0 ? "center" : ""}" style="left:${positions[index][0]}%;top:${positions[index][1]}%" data-node="${node}"><span>${index === 0 ? "◎" : "◇"}</span><strong>${node}</strong><small>${index === 0 ? "Selected" : view.type}</small></button>`).join("")}<div class="query-legend"><span><i></i>${view.type}</span><span><i></i>Related result</span></div></div>`;
   }
 
   function impactViewControls() {
