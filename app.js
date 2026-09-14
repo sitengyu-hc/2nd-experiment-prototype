@@ -390,8 +390,8 @@
     event.preventDefault();
     state.queryDraft = document.querySelector("#natural-query-input").value.trim();
     if (!state.queryDraft) return;
-    state.explorerQuery = state.queryDraft;
-    renderMain();
+    ask(state.queryDraft);
+    openAdvisor();
   });
 
   document.querySelector("#advisor-close").addEventListener("click", closeAdvisor);
