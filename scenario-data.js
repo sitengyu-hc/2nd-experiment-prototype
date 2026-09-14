@@ -87,7 +87,7 @@ window.PROTOTYPE_DATA = {
     },
     explorerInitial: {
       type: "answer",
-      html: `<p>I can help you analyze your infrastructure data. Try selecting a predefined query from the Explorer canvas, or ask me a question directly.</p>`,
+      html: `<p>I can help you analyze your infrastructure data. Ask about workspaces, resources, drift, providers, or dependencies.</p>`,
       evidence: []
     },
     "How many EC2 instances exist across my organization?": {
