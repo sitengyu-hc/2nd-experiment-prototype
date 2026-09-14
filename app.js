@@ -20,7 +20,8 @@
     explorerQuery: null,
     explorerMode: "explore",
     queryDraft: null,
-    queryConditions: []
+    queryConditions: [],
+    nodeDetailsHeight: null
   };
 
   const main = document.querySelector("#main-content");
@@ -261,7 +262,8 @@
       ["Created", "Feb 17 2025"],
       ["Updated", "Mar 03 2025"]
     ];
-    return `<section id="node-details" class="node-details"><div class="node-details-heading"><div><span class="inspector-type">WORKSPACE</span><h2>${escapeHtml(name)}</h2></div><button class="node-details-close" data-action="return-explore" aria-label="Close workspace details">×</button></div><dl>${details.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl></section>`;
+    const height = state.nodeDetailsHeight ? ` style="height:${state.nodeDetailsHeight}px"` : "";
+    return `<section id="node-details" class="node-details"${height}><div class="node-details-heading"><div><span class="inspector-type">WORKSPACE</span><h2>${escapeHtml(name)}</h2></div><button class="node-details-close" data-action="return-explore" aria-label="Close workspace details">×</button></div><dl>${details.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl><button class="node-details-resize" type="button" aria-label="Resize workspace details"></button></section>`;
   }
 
   function initializeAdvisor() {
@@ -460,6 +462,24 @@
   });
 
   document.querySelector("#advisor-close").addEventListener("click", closeAdvisor);
+  document.addEventListener("mousedown", event => {
+    if (!event.target.closest(".node-details-resize")) return;
+    const details = document.querySelector("#node-details");
+    const startY = event.clientY;
+    const startHeight = details.offsetHeight;
+    const resize = moveEvent => {
+      const maxHeight = Math.round(window.innerHeight * 0.65);
+      state.nodeDetailsHeight = Math.max(110, Math.min(maxHeight, startHeight + moveEvent.clientY - startY));
+      details.style.height = `${state.nodeDetailsHeight}px`;
+    };
+    const stop = () => {
+      document.removeEventListener("mousemove", resize);
+      document.removeEventListener("mouseup", stop);
+    };
+    document.addEventListener("mousemove", resize);
+    document.addEventListener("mouseup", stop);
+    event.preventDefault();
+  });
   document.querySelector("#nav-collapse").addEventListener("click", () => {
     state.navCollapsed = !state.navCollapsed;
     updateNavigation();
