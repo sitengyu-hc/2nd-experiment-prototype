@@ -226,19 +226,42 @@
     const inspector = state.view === "explorer" && state.explorerMode === "inspect";
     advisor.classList.toggle("is-inspector", inspector);
     advisorTitle.textContent = inspector ? "Workspace details" : "Advisor";
-    advisorComposer.hidden = inspector;
-    if (inspector) {
-      conversation.innerHTML = inspectorView();
-    } else {
-      renderConversation();
-    }
+    advisorComposer.hidden = false;
+    advisor.querySelector("#node-details")?.remove();
+    if (inspector) advisor.insertAdjacentHTML("afterbegin", inspectorView());
+    renderConversation();
   }
 
   function inspectorView() {
-    const node = data.affectedWorkspaces.find(item => item.name === state.selectedNode);
-    const resources = node?.resources || 42;
-    const relation = node ? (node.relation === "force" ? "Replacement risk" : node.relation === "selected" ? "Selected result" : "Direct dependent") : "Query result";
-    return `<div class="inspector-content"><span class="inspector-type">WORKSPACE</span><h2>${escapeHtml(state.selectedNode || "Workspace")}</h2><p>Selected from the current Explorer result set.</p><dl><dt>Resources</dt><dd>${resources}</dd><dt>Relationship</dt><dd>${relation}</dd><dt>Active query</dt><dd>${state.impactMode ? "RDS impact" : "Current filters"}</dd></dl><div class="inspector-actions"><button data-action="explain-node">✦ Explain this result</button><button data-action="show-node-impact">Show cross-workspace impact</button><button data-action="compare-node">Compare workspaces</button><button data-action="refine-query">Refine current query</button></div><button class="back-results" data-action="return-explore">← Back to results</button></div>`;
+    const name = state.selectedNode || "Workspace";
+    const details = [
+      ["Name", name],
+      ["Project name", "platform"],
+      ["Current run ID", "run-2Yks9WCFeD9xRTWo"],
+      ["Run status", "assessed"],
+      ["Current run applied", "Mar 08, 2025 09:08:02 am"],
+      ["VCS repo", "example3/CKI7TWCQ2u-dgNrNE"],
+      ["No-code module", "no-code-module-3"],
+      ["Module count", "31"],
+      ["Modules", "wad-bedezajko-rgoncjca"],
+      ["Provider count", "42"],
+      ["Providers", "registry.terraform.io/hashicorp/google"],
+      ["Terraform version", "0.14.0"],
+      ["Drifted", "false"],
+      ["Health checks succeeded", "5"],
+      ["Health checks passed", "4"],
+      ["Health checks failed", "2"],
+      ["Health checks errored", "0"],
+      ["Resources drifted", "2"],
+      ["Resources undrifted", "10"],
+      ["State TF version", "14"],
+      ["Current RUM count", "3"],
+      ["Resource count", "61"],
+      ["Tags", "production, payments"],
+      ["Created", "Feb 17 2025"],
+      ["Updated", "Mar 03 2025"]
+    ];
+    return `<section id="node-details" class="node-details"><div class="node-details-heading"><div><span class="inspector-type">WORKSPACE</span><h2>${escapeHtml(name)}</h2></div><button class="node-details-close" data-action="return-explore" aria-label="Close workspace details">×</button></div><dl>${details.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl></section>`;
   }
 
   function initializeAdvisor() {
@@ -313,7 +336,6 @@
   }
 
   function renderConversation() {
-    if (state.view === "explorer" && state.explorerMode === "inspect") return;
     conversation.innerHTML = state.messages.map(message => {
       if (message.role === "user") return `<div class="message user-message"><span>♧</span><p>${escapeHtml(message.text)}</p></div>`;
       const html = state.view === "explorer" && state.impactMode
