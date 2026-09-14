@@ -227,8 +227,8 @@
     advisor.classList.toggle("is-inspector", inspector);
     advisorTitle.textContent = inspector ? "Workspace details" : "Advisor";
     advisorComposer.hidden = false;
-    advisor.querySelector("#node-details")?.remove();
-    if (inspector) advisor.insertAdjacentHTML("afterbegin", inspectorView());
+    const nodeDetailsContainer = document.querySelector("#node-details-container");
+    nodeDetailsContainer.innerHTML = inspector ? inspectorView() : "";
     renderConversation();
   }
 

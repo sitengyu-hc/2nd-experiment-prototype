@@ -111,6 +111,7 @@ tr.clickable:hover { background: #f1f6ff; }
 .advisor { position: fixed; right: calc(var(--drawer) * -1); top: 60px; bottom: 0; width: var(--drawer); z-index: 15; background: #fff; border-left: 1px solid #d8dae0; box-shadow: -7px 0 20px #0000000d; display: flex; flex-direction: column; transition: right .25s ease; }
 .advisor.is-open { right: 0; }
 .advisor.is-inspector { background: #fafafa; }
+#node-details-container { display: contents; }
 .node-details { flex: 0 1 50%; min-height: 0; overflow-y: auto; padding: 16px 20px; border-bottom: 1px solid var(--border); background: #fff; }
 .node-details-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .node-details-heading h2 { margin: 5px 0 0; font-size: 18px; overflow-wrap: anywhere; }
