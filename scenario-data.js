@@ -87,7 +87,7 @@ window.PROTOTYPE_DATA = {
     },
     explorerInitial: {
       type: "answer",
-      html: `<p>I can help you analyze your infrastructure data. Ask about workspaces, resources, drift, providers, or dependencies.</p>`,
+      html: `<p>I can help you analyze your infrastructure data. Ask about workspaces, resources, drift, providers, or dependencies, and I will show simulated results.</p>`,
       evidence: []
     },
     "How many EC2 instances exist across my organization?": {
