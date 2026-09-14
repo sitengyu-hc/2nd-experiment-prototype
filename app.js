@@ -42,6 +42,7 @@
 
   function setView(view, options = {}) {
     if (state.view !== view) state.previousView = state.view;
+    if (state.view !== view) state.navCollapsed = view === "explorer";
     state.view = view;
     if (options.impactMode !== undefined) state.impactMode = options.impactMode;
     if (options.advisorJourney && options.advisorJourney !== state.advisorJourney) {
@@ -295,6 +296,10 @@
     document.querySelectorAll("[data-nav-item]").forEach(item => {
       item.classList.toggle("active", item.dataset.navItem === activeItem);
     });
+    document.body.classList.toggle("nav-collapsed", state.navCollapsed);
+    const toggle = document.querySelector("#nav-collapse");
+    toggle.setAttribute("aria-expanded", String(!state.navCollapsed));
+    toggle.setAttribute("aria-label", state.navCollapsed ? "Expand navigation" : "Collapse navigation");
   }
 
   function escapeHtml(value) {
@@ -392,10 +397,7 @@
   document.querySelector("#advisor-close").addEventListener("click", closeAdvisor);
   document.querySelector("#nav-collapse").addEventListener("click", () => {
     state.navCollapsed = !state.navCollapsed;
-    document.body.classList.toggle("nav-collapsed", state.navCollapsed);
-    const toggle = document.querySelector("#nav-collapse");
-    toggle.setAttribute("aria-expanded", String(!state.navCollapsed));
-    toggle.setAttribute("aria-label", state.navCollapsed ? "Expand navigation" : "Collapse navigation");
+    updateNavigation();
   });
   document.querySelector("#composer").addEventListener("submit", event => {
     event.preventDefault();
