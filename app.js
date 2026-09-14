@@ -262,7 +262,7 @@
       ["Created", "Feb 17 2025"],
       ["Updated", "Mar 03 2025"]
     ];
-    const height = state.nodeDetailsHeight ? ` style="height:${state.nodeDetailsHeight}px"` : "";
+    const height = ` style="height:${state.nodeDetailsHeight || "38vh"}"`;
     return `<section id="node-details" class="node-details"${height}><div class="node-details-heading"><div><span class="inspector-type">WORKSPACE</span><h2>${escapeHtml(name)}</h2></div><button class="node-details-close" data-action="return-explore" aria-label="Close workspace details">×</button></div><dl>${details.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl><button class="node-details-resize" type="button" aria-label="Resize workspace details"></button></section>`;
   }
 
