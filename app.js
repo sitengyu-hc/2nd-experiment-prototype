@@ -394,6 +394,17 @@
 
     const action = event.target.closest("[data-action]");
     if (action?.dataset.action === "open-initial") { openAdvisor(); initializeAdvisor(); }
+    if (action?.dataset.action === "new-session") {
+      state.messages = [];
+      state.explorerQuery = null;
+      state.queryDraft = null;
+      state.selectedNode = null;
+      state.explorerMode = "explore";
+      state.promptsOpen = true;
+      initializeAdvisor();
+      renderMain();
+      renderAdvisorPanel();
+    }
     if (action?.dataset.action === "show-impact") { setView("explorer", { impactMode: true }); openAdvisor(); }
     if (action?.dataset.action === "ask-advisor") { openAdvisor(); input.focus(); }
     if (action?.dataset.action === "toggle-browse") { state.browseOpen = !state.browseOpen; renderMain(); }

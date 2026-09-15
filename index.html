@@ -53,7 +53,14 @@
             <span class="advisor-spark">✦</span>
             <strong id="advisor-title">Advisor</strong>
           </div>
-          <button id="advisor-close" class="bare-button" aria-label="Close Advisor">×</button>
+          <div class="advisor-toolbar">
+            <button class="new-session" data-action="new-session" type="button">New session</button>
+            <span class="dock-label">Dock side</span>
+            <button class="dock-button" type="button" aria-label="Dock left">◧</button>
+            <button class="dock-button" type="button" aria-label="Dock center">▰</button>
+            <button class="dock-button active" type="button" aria-label="Dock right">▣</button>
+            <button id="advisor-close" class="bare-button" aria-label="Close Advisor">›</button>
+          </div>
         </div>
         <div id="node-details-container"></div>
         <div id="conversation" class="conversation" aria-live="polite"></div>
@@ -72,7 +79,7 @@
       </aside>
     </div>
 
-    <script src="scenario-data.js?v=a8d31e0d8e4f7a56d1bfed3c5da15cce24bd71dc"></script>
-    <script src="app.js?v=a8d31e0d8e4f7a56d1bfed3c5da15cce24bd71dc"></script>
+    <script src="scenario-data.js?v=431c342d1588e48d12c60ee127d37b52488347ef"></script>
+    <script src="app.js?v=431c342d1588e48d12c60ee127d37b52488347ef"></script>
   </body>
 </html>
