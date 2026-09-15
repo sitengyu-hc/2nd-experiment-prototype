@@ -5,7 +5,7 @@
   const state = {
     view: "workspaces",
     previousView: null,
-    advisorOpen: true,
+    advisorOpen: false,
     messages: [],
     impactMode: false,
     advisorJourney: "run",
@@ -523,7 +523,7 @@
     input.value = "";
   });
 
-  document.body.classList.add("advisor-open");
+  if (state.advisorOpen) document.body.classList.add("advisor-open");
   initializeAdvisor();
   renderMain();
   updateScope();
