@@ -66,6 +66,14 @@
         <div id="conversation" class="conversation" aria-live="polite"></div>
         <div id="advisor-composer" class="composer-wrap">
           <div id="prompt-menu" class="prompt-menu"></div>
+          <div class="footer-actions">
+            <button id="history-toggle" class="history-toggle" type="button" aria-expanded="false">Chat history <span>⌄</span></button>
+            <div id="history-menu" class="history-menu" hidden>
+              <button data-history="Drifted workspaces investigation">Drifted workspaces investigation <small>Today</small></button>
+              <button data-history="RDS module impact review">RDS module impact review <small>Yesterday</small></button>
+              <button data-history="AWS provider inventory">AWS provider inventory <small>Mar 08</small></button>
+            </div>
+          </div>
           <form id="composer" class="composer">
             <span>＋</span>
             <input id="advisor-input" type="text" placeholder="Ask Advisor..." autocomplete="off">
@@ -79,7 +87,7 @@
       </aside>
     </div>
 
-    <script src="scenario-data.js?v=1650ce52a4a50a9cd0b4cbb189ed965ed3b2eefb"></script>
-    <script src="app.js?v=1650ce52a4a50a9cd0b4cbb189ed965ed3b2eefb"></script>
+    <script src="scenario-data.js?v=c5223c012f459163b4d99d4c16b28d02fc8f0efb"></script>
+    <script src="app.js?v=c5223c012f459163b4d99d4c16b28d02fc8f0efb"></script>
   </body>
 </html>

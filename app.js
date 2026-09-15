@@ -351,7 +351,7 @@
       return `<article class="message advisor-message">${html}${message.evidence && message.evidence.length ? `<div class="references"><span>References</span>${message.evidence.map(item => `<a href="#" data-reference>${item}</a>`).join("")}</div>` : ""}${feedback}</article>`;
     }).join("");
     const prompts = state.advisorJourney === "explorer" ? data.explorerPrompts : state.impactMode ? data.impactPrompts : data.suggestedPrompts;
-    promptMenu.innerHTML = `<button id="prompt-toggle" class="prompt-toggle" type="button" aria-expanded="${state.promptsOpen}">Suggested prompts <span>${state.promptsOpen ? "⌃" : "⌄"}</span></button><div class="prompt-list" ${state.promptsOpen ? "" : "hidden"}>${prompts.map(prompt => `<button data-prompt="${prompt}">${prompt}</button>`).join("")}</div>`;
+    promptMenu.innerHTML = `<button id="prompt-toggle" class="prompt-toggle" type="button" aria-expanded="${state.promptsOpen}">Inspect further <span>${state.promptsOpen ? "⌃" : "⌄"}</span></button><div class="prompt-list" ${state.promptsOpen ? "" : "hidden"}>${prompts.map(prompt => `<button data-prompt="${prompt}">${prompt}</button>`).join("")}</div>`;
     requestAnimationFrame(() => { conversation.scrollTop = conversation.scrollHeight; });
   }
 
@@ -445,6 +445,24 @@
 
     if (event.target.closest("#prompt-toggle")) {
       state.promptsOpen = !state.promptsOpen;
+      renderConversation();
+    }
+
+    if (event.target.closest("#history-toggle")) {
+      const toggle = document.querySelector("#history-toggle");
+      const menu = document.querySelector("#history-menu");
+      const open = menu.hidden;
+      menu.hidden = !open;
+      toggle.setAttribute("aria-expanded", String(open));
+    }
+
+    const history = event.target.closest("[data-history]");
+    if (history) {
+      document.querySelector("#history-menu").hidden = true;
+      document.querySelector("#history-toggle").setAttribute("aria-expanded", "false");
+      state.messages = [];
+      state.messages.push({ role: "user", text: history.dataset.history });
+      state.messages.push({ role: "advisor", type: "answer", feedback: true, html: `<p>Here is the latest simulated context from the <strong>${escapeHtml(history.dataset.history)}</strong> conversation.</p>`, evidence: ["Conversation history"] });
       renderConversation();
     }
 

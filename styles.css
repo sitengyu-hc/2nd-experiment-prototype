@@ -160,15 +160,25 @@ tr.clickable:hover { background: #f1f6ff; }
 .feedback button { display: grid; place-content: center; width: 27px; height: 27px; border: 0; border-radius: 4px; background: transparent; color: #656a76; cursor: pointer; }
 .feedback button:hover { background: #edf4ff; color: #075bd8; }
 .feedback svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
-.composer-wrap { flex-shrink: 0; border-top: 1px solid #c2c5cb; padding: 8px 12px 10px; background: #fff; }
+.composer-wrap { position: relative; flex-shrink: 0; border-top: 1px solid #c2c5cb; padding: 0 12px 10px; background: #f1f2f3; }
 .composer-wrap[hidden] { display: none; }
-.prompt-toggle { width: 100%; display: flex; justify-content: space-between; border: 0; background: #fff; padding: 7px 0 6px; color: #515562; font-weight: 500; font-size: 12px; }
+.prompt-menu { padding: 6px 0 7px; }
+.prompt-toggle { width: 100%; display: flex; justify-content: space-between; border: 0; background: transparent; padding: 6px 0; color: #515562; font-weight: 500; font-size: 12px; }
 .prompt-toggle { cursor: pointer; }
 .prompt-list { display: grid; gap: 6px; padding-bottom: 9px; }
 .prompt-list[hidden] { display: none; }
-.prompt-list button { width: 100%; border: 1px solid var(--border); border-radius: 7px; background: #fff; text-align: left; padding: 7px 10px; cursor: pointer; font-size: 12px; }
-.prompt-list button:hover { border-color: #7651f6; background: #f8f5ff; }
-.composer { display: flex; align-items: center; gap: 7px; }
+.prompt-list button { width: 100%; border: 1px solid #1060ff; border-radius: 16px; background: #fff; color: #075bd8; text-align: left; padding: 6px 12px; cursor: pointer; font-size: 12px; }
+.prompt-list button:hover { background: #e7efff; }
+.footer-actions { position: relative; display: flex; justify-content: flex-end; }
+.history-toggle { border: 0; background: transparent; color: #656a76; padding: 4px 0 7px; font-size: 11px; cursor: pointer; }
+.history-toggle span { color: #1060ff; margin-left: 4px; }
+.history-menu { position: absolute; right: 0; bottom: 100%; z-index: 4; display: grid; width: min(300px, 90%); border: 1px solid #c2c5cb; border-radius: 7px; background: #fff; box-shadow: 0 8px 22px #0002; overflow: hidden; }
+.history-menu[hidden] { display: none; }
+.history-menu button { display: flex; justify-content: space-between; gap: 12px; border: 0; border-bottom: 1px solid var(--border); background: #fff; padding: 9px 11px; text-align: left; font-size: 12px; cursor: pointer; }
+.history-menu button:last-child { border-bottom: 0; }
+.history-menu button:hover { background: #e7efff; color: #075bd8; }
+.history-menu small { color: #656a76; white-space: nowrap; }
+.composer { display: flex; align-items: center; gap: 7px; padding-top: 2px; }
 .composer > span { position: absolute; margin-left: 10px; color: #858a96; }
 .composer input { min-width: 0; flex: 1; border: 1px solid #c2c5cb; background: #fff; border-radius: 16px; padding: 7px 10px 7px 27px; outline: 0; font-size: 14px; }
 .composer input:focus { border-color: #7651f6; box-shadow: 0 0 0 2px #7651f622; }
