@@ -356,7 +356,8 @@
   }
 
   function updateScope() {
-    document.querySelector("#scope").textContent = state.advisorJourney === "explorer" ? "CoolCorp / Explorer" : "CoolCorp / my-workspace";
+    const scope = document.querySelector("#scope");
+    if (scope) scope.textContent = state.advisorJourney === "explorer" ? "CoolCorp / Explorer" : "CoolCorp / my-workspace";
   }
 
   function updateNavigation() {

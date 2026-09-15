@@ -167,10 +167,9 @@ tr.clickable:hover { background: #f1f6ff; }
 .prompt-list[hidden] { display: none; }
 .prompt-list button { width: 100%; border: 1px solid #1060ff; border-radius: 16px; background: #fff; color: #075bd8; text-align: left; padding: 6px 12px; cursor: pointer; font-size: 12px; }
 .prompt-list button:hover { background: #e7efff; }
-.footer-actions { position: relative; display: flex; justify-content: flex-end; }
-.history-toggle { border: 0; background: transparent; color: #656a76; padding: 4px 0 7px; font-size: 11px; cursor: pointer; }
-.history-toggle span { color: #1060ff; margin-left: 4px; }
-.history-menu { position: absolute; right: 0; bottom: 100%; z-index: 4; display: grid; width: min(300px, 90%); border: 1px solid #c2c5cb; border-radius: 7px; background: #fff; box-shadow: 0 8px 22px #0002; overflow: hidden; }
+.history-toggle { position: absolute; right: 57px; display: grid; place-items: center; width: 32px; height: 32px; border: 0; background: transparent; color: #656a76; padding: 0; font-size: 15px; cursor: pointer; }
+.history-toggle:hover { color: #1060ff; }
+.history-menu { position: absolute; right: 11px; bottom: 60px; z-index: 4; display: grid; width: min(300px, 90%); border: 1px solid #c2c5cb; border-radius: 7px; background: #fff; box-shadow: 0 8px 22px #0002; overflow: hidden; }
 .history-menu[hidden] { display: none; }
 .history-menu button { display: flex; justify-content: space-between; gap: 12px; border: 0; border-bottom: 1px solid var(--border); background: #fff; padding: 9px 11px; text-align: left; font-size: 12px; cursor: pointer; }
 .history-menu button:last-child { border-bottom: 0; }
@@ -178,11 +177,9 @@ tr.clickable:hover { background: #f1f6ff; }
 .history-menu small { color: #656a76; white-space: nowrap; }
 .composer { display: flex; align-items: center; gap: 7px; height: 60px; }
 .composer > span { position: absolute; margin-left: 15px; color: #8c909c; font-size: 18px; }
-.composer input { min-width: 0; flex: 1; height: 40px; border: 1px solid #3b3d4566; background: #fff; border-radius: 6px; padding: 7px 42px 7px 42px; outline: 0; font-size: 14px; }
+.composer input { min-width: 0; flex: 1; height: 40px; border: 1px solid #3b3d4566; background: #fff; border-radius: 6px; padding: 7px 78px 7px 42px; outline: 0; font-size: 14px; }
 .composer input:focus { border-color: #7651f6; box-shadow: 0 0 0 2px #7651f622; }
 .composer button { position: absolute; right: 22px; display: grid; place-items: center; width: 26px; height: 26px; border: 0; background: #1060ff; color: #fff; border-radius: 50%; padding: 0 0 2px; font-size: 18px; line-height: 1; cursor: pointer; }
-.composer-meta { display: flex; gap: 14px; align-items: center; margin-top: 7px; color: #515562; font-size: 11px; }
-.mode-pill { border: 1px solid var(--border); background: #fff; color: #656a76; border-radius: 15px; padding: 6px 9px; font-size: 10px; }
 
 .explorer-page { min-height: 100%; position: relative; overflow: hidden; background-color: #fafafa; background-image: radial-gradient(#dedfe3 1.5px, transparent 1.5px); background-size: 18px 18px; }
 .explorer-controls { position: absolute; z-index: 6; top: 20px; left: 30px; width: min(425px, 50vw); max-height: calc(100% - 40px); overflow: visible; padding: 18px; background: #fff; border: 1px solid #dedfe3; border-radius: 10px; box-shadow: 0 14px 32px #0000001f; transition: transform .2s ease, opacity .2s ease; }
