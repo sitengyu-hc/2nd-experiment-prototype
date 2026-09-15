@@ -158,7 +158,7 @@ tr.clickable:hover { background: #f1f6ff; }
 .feedback button { display: grid; place-content: center; width: 27px; height: 27px; border: 0; border-radius: 4px; background: transparent; color: #656a76; cursor: pointer; }
 .feedback button:hover { background: #edf4ff; color: #075bd8; }
 .feedback svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
-.composer-wrap { position: relative; flex-shrink: 0; border-top: 1px solid #c2c5cb; padding: 0 12px 10px; background: #f1f2f3; }
+.composer-wrap { position: relative; flex-shrink: 0; border-top: 1px solid #c2c5cb; padding: 0 11px; background: #f1f2f3; }
 .composer-wrap[hidden] { display: none; }
 .prompt-menu { padding: 6px 0 7px; }
 .prompt-toggle { width: 100%; display: flex; justify-content: space-between; border: 0; background: transparent; padding: 6px 0; color: #515562; font-weight: 500; font-size: 12px; }
@@ -176,11 +176,11 @@ tr.clickable:hover { background: #f1f6ff; }
 .history-menu button:last-child { border-bottom: 0; }
 .history-menu button:hover { background: #e7efff; color: #075bd8; }
 .history-menu small { color: #656a76; white-space: nowrap; }
-.composer { display: flex; align-items: center; gap: 7px; padding-top: 2px; }
-.composer > span { position: absolute; margin-left: 10px; color: #858a96; }
-.composer input { min-width: 0; flex: 1; border: 1px solid #c2c5cb; background: #fff; border-radius: 16px; padding: 7px 10px 7px 27px; outline: 0; font-size: 14px; }
+.composer { display: flex; align-items: center; gap: 7px; height: 60px; }
+.composer > span { position: absolute; margin-left: 15px; color: #8c909c; font-size: 18px; }
+.composer input { min-width: 0; flex: 1; height: 40px; border: 1px solid #3b3d4566; background: #fff; border-radius: 6px; padding: 7px 42px 7px 42px; outline: 0; font-size: 14px; }
 .composer input:focus { border-color: #7651f6; box-shadow: 0 0 0 2px #7651f622; }
-.composer button { border: 0; background: #1060ff; color: #fff; border-radius: 5px; padding: 7px 12px; font-weight: 600; font-size: 13px; }
+.composer button { position: absolute; right: 22px; display: grid; place-items: center; width: 26px; height: 26px; border: 0; background: #1060ff; color: #fff; border-radius: 50%; padding: 0 0 2px; font-size: 18px; line-height: 1; cursor: pointer; }
 .composer-meta { display: flex; gap: 14px; align-items: center; margin-top: 7px; color: #515562; font-size: 11px; }
 .mode-pill { border: 1px solid var(--border); background: #fff; color: #656a76; border-radius: 15px; padding: 6px 9px; font-size: 10px; }
 
