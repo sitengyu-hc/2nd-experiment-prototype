@@ -180,7 +180,7 @@ tr.clickable:hover { background: #f1f6ff; }
 .composer > span { position: absolute; margin-left: 15px; color: #8c909c; font-size: 18px; }
 .composer input { min-width: 0; flex: 1 1 auto; height: 40px; border: 1px solid #3b3d4566; background: #fff; border-radius: 6px; padding: 7px 42px 7px 42px; outline: 0; font-size: 14px; }
 .composer input:focus { border-color: #7651f6; box-shadow: 0 0 0 2px #7651f622; }
-.composer > button[type="submit"] { position: absolute; right: 64px; display: grid; place-items: center; width: 26px; height: 26px; border: 0; background: #1060ff; color: #fff; border-radius: 50%; padding: 0 0 2px; font-size: 18px; line-height: 1; cursor: pointer; }
+.composer > button[type="submit"] { position: absolute; right: 73px; display: grid; place-items: center; width: 26px; height: 26px; border: 0; background: #1060ff; color: #fff; border-radius: 50%; padding: 0 0 2px; font-size: 18px; line-height: 1; cursor: pointer; }
 
 .explorer-page { min-height: 100%; position: relative; overflow: hidden; background-color: #fafafa; background-image: radial-gradient(#dedfe3 1.5px, transparent 1.5px); background-size: 18px 18px; }
 .explorer-controls { position: absolute; z-index: 6; top: 20px; left: 30px; width: min(425px, 50vw); max-height: calc(100% - 40px); overflow: visible; padding: 18px; background: #fff; border: 1px solid #dedfe3; border-radius: 10px; box-shadow: 0 14px 32px #0000001f; transition: transform .2s ease, opacity .2s ease; }
