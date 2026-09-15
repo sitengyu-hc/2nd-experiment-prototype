@@ -338,7 +338,7 @@
   }
 
   function renderConversation() {
-    conversation.innerHTML = state.messages.map(message => {
+    conversation.innerHTML = state.messages.map((message, index) => {
       if (message.role === "user") return `<div class="message user-message"><span>♧</span><p>${escapeHtml(message.text)}</p></div>`;
       const html = state.view === "explorer" && state.impactMode
         ? message.html.replace(
@@ -346,7 +346,8 @@
             '<div class="current-location"><span>✓ Viewing 5 affected workspaces in Explorer</span><button class="text-link" data-nav="run">← Back to failed run</button></div>'
           )
         : message.html;
-      const feedback = message.feedback ? `<div class="feedback"><span>Did this response answer your question?</span><button aria-label="Thumbs up" title="Thumbs up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v11H3V10h4Zm0 10h10.4a2 2 0 0 0 2-1.7l1.3-7A2 2 0 0 0 18.8 9H14l.7-3.4A2.2 2.2 0 0 0 12.5 3L7 10Z"/></svg></button><button aria-label="Thumbs down" title="Thumbs down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V3H3v11h4Zm0-10h10.4a2 2 0 0 1 2 1.7l1.3 7a2 2 0 0 1-1.9 2.3H14l.7 3.4a2.2 2.2 0 0 1-2.2 2.6L7 14Z"/></svg></button></div>` : "";
+      const hasUserQuestion = state.messages.slice(0, index).some(item => item.role === "user");
+      const feedback = message.feedback && hasUserQuestion ? `<div class="feedback"><span>Did this response answer your question?</span><button aria-label="Thumbs up" title="Thumbs up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v11H3V10h4Zm0 10h10.4a2 2 0 0 0 2-1.7l1.3-7A2 2 0 0 0 18.8 9H14l.7-3.4A2.2 2.2 0 0 0 12.5 3L7 10Z"/></svg></button><button aria-label="Thumbs down" title="Thumbs down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V3H3v11h4Zm0-10h10.4a2 2 0 0 1 2 1.7l1.3 7a2 2 0 0 1-1.9 2.3H14l.7 3.4a2.2 2.2 0 0 1-2.2 2.6L7 14Z"/></svg></button></div>` : "";
       return `<article class="message advisor-message">${html}${message.evidence && message.evidence.length ? `<div class="references"><span>References</span>${message.evidence.map(item => `<a href="#" data-reference>${item}</a>`).join("")}</div>` : ""}${feedback}</article>`;
     }).join("");
     const prompts = state.advisorJourney === "explorer" ? data.explorerPrompts : state.impactMode ? data.impactPrompts : data.suggestedPrompts;
