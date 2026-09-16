@@ -45,6 +45,15 @@
     if (state.view !== view) state.previousView = state.view;
     if (state.view !== view) state.navCollapsed = view === "explorer";
     state.view = view;
+    if (view === "run") {
+      state.advisorOpen = true;
+      advisor.classList.add("is-open");
+      document.body.classList.add("advisor-open");
+    } else if (view === "workspaces") {
+      state.advisorOpen = false;
+      advisor.classList.remove("is-open");
+      document.body.classList.remove("advisor-open");
+    }
     if (options.impactMode !== undefined) state.impactMode = options.impactMode;
     if (options.advisorJourney && options.advisorJourney !== state.advisorJourney) {
       state.advisorJourney = options.advisorJourney;
