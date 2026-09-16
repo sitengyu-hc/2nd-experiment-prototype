@@ -386,11 +386,13 @@
     const nav = event.target.closest("[data-nav]");
     if (nav) {
       const directExplorerEntry = nav.dataset.nav === "explorer";
+      const runEntry = nav.dataset.nav === "run";
       setView(nav.dataset.nav, {
         impactMode: false,
         advisorJourney: directExplorerEntry ? "explorer" : "run"
       });
       if (directExplorerEntry) closeAdvisor();
+      if (runEntry) { openAdvisor(); initializeAdvisor(); }
     }
 
     const action = event.target.closest("[data-action]");
