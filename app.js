@@ -121,7 +121,7 @@
   }
 
   function defaultExplorerControls() {
-    return `<form id="natural-query-form" class="natural-query"><label for="natural-query-input">Enter a natural language query</label><input id="natural-query-input" placeholder="e.g. production workspaces using AWS 5.x" value="${state.queryDraft ? escapeHtml(state.queryDraft) : ""}"></form>
+    return `<form id="natural-query-form" class="natural-query"><label for="natural-query-input">Enter a natural language query</label><div class="natural-query-row"><input id="natural-query-input" placeholder="e.g. production workspaces using AWS 5.x" value="${state.queryDraft ? escapeHtml(state.queryDraft) : ""}"><button type="submit">Enter</button></div></form>
       ${state.explorerQuery ? directReturnedNodes() : ""}`;
   }
 

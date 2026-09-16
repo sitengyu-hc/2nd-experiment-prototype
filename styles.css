@@ -197,7 +197,9 @@ tr.clickable:hover { background: #f1f6ff; }
 .view-toggle button.active { background: #fff; color: #0c0c0e; font-weight: 600; box-shadow: 0 1px 3px #0002; }
 .natural-query { margin-top: 12px; }
 .natural-query label { display: block; margin-bottom: 6px; color: #3b3d45; font-size: 11px; font-weight: 600; }
-.natural-query input { width: 100%; border: 1px solid #b8bcc5; border-radius: 5px; padding: 9px; font-size: 11px; }
+.natural-query-row { display: flex; align-items: stretch; gap: 6px; }
+.natural-query input { min-width: 0; flex: 1; border: 1px solid #b8bcc5; border-radius: 5px; padding: 9px; font-size: 11px; }
+.natural-query-row button { border: 1px solid #1060ff; border-radius: 5px; background: #1060ff; color: #fff; padding: 0 10px; font-size: 11px; font-weight: 600; cursor: pointer; }
 .compact-query { display: grid; gap: 6px; margin-top: 15px; padding: 12px; border: 1px solid #b8d0ff; border-radius: 7px; background: #edf4ff; }
 .compact-query > span { color: #174ea6; font-size: 9px; font-weight: 700; letter-spacing: .08em; }.compact-query small { color: #656a76; }.compact-query > div { display: flex; flex-wrap: wrap; gap: 5px; }.compact-query code { padding: 4px 6px; border-radius: 3px; background: #fff; color: #174ea6; font-size: 10px; }.compact-query button { border: 0; background: transparent; color: #075bd8; padding: 5px 0 0; text-align: left; font-size: 11px; cursor: pointer; }
 .explorer-mode-inspect .explorer-controls, .explorer-mode-converse .explorer-controls { width: 300px; }
