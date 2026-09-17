@@ -406,6 +406,7 @@
 
     const action = event.target.closest("[data-action]");
     if (action?.dataset.action === "open-initial") { openAdvisor(); initializeAdvisor(); }
+    if (action?.dataset.action === "open-advisor") { openAdvisor(); initializeAdvisor(); }
     if (action?.dataset.action === "new-session") {
       state.messages = [];
       state.explorerQuery = null;
