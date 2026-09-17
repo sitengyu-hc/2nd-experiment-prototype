@@ -49,7 +49,7 @@ window.PROTOTYPE_DATA = {
     initial: {
       type: "answer",
       feedback: true,
-      html: `<p>The plan failed because <code>module.database.aws_db_instance.this</code> is marked for replacement, but its configuration contains <code class="warning-code">lifecycle { prevent_destroy = true }</code>.</p><p>The module upgrade from <strong>v4.0.0</strong> to <strong>v5.1.0</strong> changed <code>db_name</code>. Because that attribute requires replacement, Terraform attempted to destroy and recreate the database. The lifecycle guard stopped the operation before any infrastructure changed.</p><div class="callout warning"><strong>Pause before applying a fix.</strong> This is a production database. Confirm whether the replacement was intended and review affected workspaces first.</div>`,
+      html: `<p>The plan failed because <code>module.database.aws_db_instance.this</code> is marked for replacement, but its configuration contains <code class="warning-code">lifecycle { prevent_destroy = true }</code>.</p><p>The module upgrade from <strong>v4.0.0</strong> to <strong>v5.1.0</strong> changed <code>db_name</code>. Because that attribute requires replacement, Terraform attempted to destroy and recreate the database. The lifecycle guard stopped the operation before any infrastructure changed.</p><p>Two production workspaces also consume this module.</p><div class="callout warning"><strong>Pause before applying a fix.</strong> This is a production database. Confirm whether the replacement was intended and review affected workspaces first.</div>`,
       evidence: ["Plan diagnostics", "replace_paths: db_name", "Configuration version diff"]
     },
     "What options do I have to fix this?": {
