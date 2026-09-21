@@ -64,6 +64,12 @@ window.PROTOTYPE_DATA = {
       html: `<p><strong>Five workspaces consume the changed database module version or have a direct dependency on one of those workspaces.</strong></p><p>No additional runs have been triggered. These configurations are passive until their next plan, unless a workspace has an explicit run trigger.</p><p>The two production consumers are the highest risk because their next plan could propose the same database replacement.</p><button class="inline-link" data-action="show-impact">View 5 affected workspaces in Explorer →</button>`,
       evidence: ["Explorer dependency graph", "Module consumers", "Run triggers"]
     },
+    "What other workspaces are using RDS module v5.1.0?": {
+      type: "answer",
+      feedback: true,
+      html: `<p><strong>Five other workspaces are using the RDS module at v5.1.0.</strong></p><p>Two are production workspaces, so the same <code>db_name</code> replacement risk may appear when they run next. The remaining consumers are in staging and analytics environments.</p><p>I can open Explorer with the consuming workspaces so you can review their owners, resources, current run status, and downstream relationships.</p><button class="inline-link" data-action="show-impact">View module consumers in Explorer →</button>`,
+      evidence: ["Module consumers", "Workspace inventory", "RDS module v5.1.0"]
+    },
     "How do I avoid destroying the database?": {
       type: "answer",
       feedback: true,
