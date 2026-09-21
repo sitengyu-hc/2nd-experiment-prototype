@@ -29,7 +29,7 @@ window.PROTOTYPE_DATA = {
   ],
   suggestedPrompts: [
     "What options do I have to fix this?",
-    "What is the downstream impact?",
+    "What other workspaces are using RDS module v5.1.0?",
     "How do I avoid destroying the database?",
     "Who introduced the lifecycle guard?"
   ],
@@ -57,12 +57,6 @@ window.PROTOTYPE_DATA = {
       feedback: true,
       html: `<p>There are three paths, depending on whether the database rename was intended:</p><ol><li><strong>Safest: revert the module upgrade.</strong> Pin the caller to <code>v4.0.0</code>, then run a new plan. This preserves the current database.</li><li><strong>Upgrade without renaming.</strong> Update v5.1.0 so it keeps the existing <code>db_name</code>. Validate the module change with a new plan before rolling it out.</li><li><strong>Perform a controlled replacement.</strong> Only if a new database is intended: create a migration and backup plan, review dependents, then explicitly manage the lifecycle guard. Do not simply remove <code>prevent_destroy</code>.</li></ol><div class="code-card"><div class="code-title">main.tf</div><pre><span class="line">18</span> module "database" {\n<span class="line">19</span> <span class="minus">- source = "./modules/rds/v5.1.0"</span>\n<span class="line">20</span> <span class="plus">+ source = "./modules/rds/v4.0.0"</span>\n<span class="line">21</span> }</pre></div>`,
       evidence: ["Configuration version diff", "Module v4.0.0", "Module v5.1.0"]
-    },
-    "What is the downstream impact?": {
-      type: "answer",
-      feedback: true,
-      html: `<p><strong>Five workspaces consume the changed database module version or have a direct dependency on one of those workspaces.</strong></p><p>No additional runs have been triggered. These configurations are passive until their next plan, unless a workspace has an explicit run trigger.</p><p>The two production consumers are the highest risk because their next plan could propose the same database replacement.</p><button class="inline-link" data-action="show-impact">View 5 affected workspaces in Explorer →</button>`,
-      evidence: ["Explorer dependency graph", "Module consumers", "Run triggers"]
     },
     "What other workspaces are using RDS module v5.1.0?": {
       type: "answer",
