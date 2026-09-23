@@ -111,7 +111,7 @@
       <section class="panel plan-panel"><div class="panel-title"><span class="red">ⓧ</span>　<strong>Plan errored</strong></div><div class="panel-body">
         <p><strong>Started</strong> 30 minutes ago　&gt; <strong>Finished</strong> 30 minutes ago</p><div class="create-bar">＋ 2 to create</div>
         <div class="filter-row"><button class="secondary wide">⌕ Filter by address...</button><button class="secondary">☷ Filter by action　⌄</button><span>terraform 1.8</span><button class="secondary">▣ Download raw log</button></div>
-        <div class="diagnostics-heading"><strong>⌄ Diagnostics</strong><button class="advisor-gradient" data-action="open-initial">✦ Explore in Advisor</button></div>
+        <div class="diagnostics-heading"><strong>⌄ Diagnostics</strong><button class="advisor-gradient" data-action="open-initial">✦ Explore in Albus</button></div>
         <div class="error-card"><div class="error-title">Error: Instance cannot be destroyed</div><p>on ${data.run.sourceFile} line ${data.run.sourceLine}:</p><pre>resource "aws_db_instance" "this" {</pre><p>Resource <code>${data.run.address}</code> has <code>lifecycle.prevent_destroy</code> set, but the plan calls for this resource to be destroyed.</p></div>
       </div></section>
     </div>`;
@@ -338,7 +338,7 @@
   function renderAdvisorPanel() {
     const inspector = state.view === "explorer" && state.explorerMode === "inspect";
     advisor.classList.toggle("is-inspector", inspector);
-    advisorTitle.textContent = inspector ? "Workspace details" : "Advisor";
+    advisorTitle.textContent = inspector ? "Workspace details" : "Albus";
     advisorComposer.hidden = inspector;
     if (inspector) {
       conversation.innerHTML = inspectorView();

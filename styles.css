@@ -351,7 +351,7 @@ tr.clickable:hover { background: #f1f6ff; }
 .explorer-impact .zoom-tools button:last-child { border-right: 0; }
 .explorer-impact .zoom-tools button.active { background: #f0f1f3; color: #111; font-weight: 600; }
 .explorer-impact .conversation { padding-bottom: 0; }
-.explorer-impact .advisor-message { border: 0; padding: 0; margin-bottom: 12px; }
+.explorer-impact .advisor-message { border: 0; padding: 0 0 4px 32px; margin-bottom: 12px; }
 .explorer-impact .advisor-message .references,
 .explorer-impact .advisor-message .feedback { display: none; }
 .explorer-impact .current-location { display: grid; gap: 8px; border: 0; background: transparent; color: #353840; font-weight: 400; padding: 0; }
