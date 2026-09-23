@@ -21,35 +21,34 @@ window.PROTOTYPE_DATA = {
     currentModuleVersion: "v5.1.0"
   },
   affectedWorkspaces: [
-    { name: "my-workspace", resources: 211, relation: "selected", x: 69, y: 52 },
-    { name: "prod-payments", resources: 95, relation: "force", x: 86, y: 30 },
-    { name: "prod-catalog", resources: 65, relation: "force", x: 86, y: 70 },
-    { name: "staging-web", resources: 34, relation: "dependent", x: 60, y: 29 },
-    { name: "analytics-worker", resources: 203, relation: "dependent", x: 60, y: 72 }
+    { name: "my-workspace", resources: 211, relation: "selected", environment: "production", runStatus: "errored", x: 48, y: 50 },
+    { name: "payments-prod-eu", resources: 95, relation: "consumer", environment: "production", runStatus: "applied", x: 72, y: 23 },
+    { name: "payments-staging", resources: 65, relation: "consumer", environment: "staging", runStatus: "planned", x: 79, y: 51 },
+    { name: "analytics-prod", resources: 34, relation: "consumer", environment: "analytics", runStatus: "applied", x: 69, y: 77 },
+    { name: "platform-rds", resources: 203, relation: "consumer", environment: "platform", runStatus: "applied", x: 27, y: 74 },
+    { name: "payments-prod-us", resources: 148, relation: "consumer", environment: "production", runStatus: "planned", x: 23, y: 26 }
   ],
   suggestedPrompts: [
     "What options do I have to fix this?",
     "What other workspaces are using RDS module v5.1.0?",
-    "How do I avoid destroying the database?",
     "Who introduced the lifecycle guard?"
   ],
   impactPrompts: [
-    "Save this Explorer view",
-    "Download this view's data",
-    "How do I avoid destroying the database?"
+    "What modules are no longer being used?",
+    "When was the last time this module was used?",
+    "Save this view"
   ],
   explorerPrompts: [
-    "How many EC2 instances exist across my organization?",
-    "Which workspaces use AWS provider version 5.x?",
-    "What resources depend on workspace X?",
-    "What is the cross workspace impact of workspace Y?",
-    "Show resources using module Z."
+    "View all modules",
+    "View all providers",
+    "View all resources",
+    "Drifted workspaces"
   ],
   responses: {
     initial: {
       type: "answer",
       feedback: true,
-      html: `<p>The plan failed because <code>module.database.aws_db_instance.this</code> is marked for replacement, but its configuration contains <code class="warning-code">lifecycle { prevent_destroy = true }</code>.</p><p>The module upgrade from <strong>v4.0.0</strong> to <strong>v5.1.0</strong> changed <code>db_name</code>. Because that attribute requires replacement, Terraform attempted to destroy and recreate the database. The lifecycle guard stopped the operation before any infrastructure changed.</p><p>Two production workspaces also consume this module.</p><div class="callout warning"><strong>Pause before applying a fix.</strong> This is a production database. Confirm whether the replacement was intended and review affected workspaces first.</div>`,
+      html: `<p>The plan failed because <code>module.database.aws_db_instance.this</code> is marked for replacement, but its configuration contains <code class="warning-code">lifecycle { prevent_destroy = true }</code>.</p><p>The module upgrade from <strong>v4.0.0</strong> to <strong>v5.1.0</strong> changed <code>db_name</code>. Because that attribute requires replacement, Terraform attempted to destroy and recreate the database. The lifecycle guard stopped the operation before any infrastructure changed.</p><p><strong>Two production workspaces also consume this module.</strong></p><div class="callout warning"><strong>Pause before applying a fix.</strong> This is a production database. Confirm whether the replacement was intended and review module consumers first.</div>`,
       evidence: ["Plan diagnostics", "replace_paths: db_name", "Configuration version diff"]
     },
     "What options do I have to fix this?": {
@@ -61,8 +60,8 @@ window.PROTOTYPE_DATA = {
     "What other workspaces are using RDS module v5.1.0?": {
       type: "answer",
       feedback: true,
-      html: `<p><strong>Five other workspaces are using the RDS module at v5.1.0.</strong></p><p>Two are production workspaces, so the same <code>db_name</code> replacement risk may appear when they run next. The remaining consumers are in staging and analytics environments.</p><p>I can open Explorer with the consuming workspaces so you can review their owners, resources, current run status, and downstream relationships.</p><button class="inline-link" data-action="show-impact">View module consumers in Explorer →</button>`,
-      evidence: ["Module consumers", "Workspace inventory", "RDS module v5.1.0"]
+      html: `<p><strong>Five other workspaces are using the RDS module at v5.1.0.</strong></p><p>Two are production workspaces, so the same <code>db_name</code> replacement risk may appear when they run next. The remaining consumers are in staging and analytics environments.</p><p>I can open Explorer with the consuming workspaces so you can review their owners, resources, current run status, and relationships.</p><button class="inline-link" data-action="show-impact">View module consumers in Explorer →</button>`,
+      evidence: ["Explorer module inventory", "Module consumers"]
     },
     "How do I avoid destroying the database?": {
       type: "answer",
@@ -75,30 +74,45 @@ window.PROTOTYPE_DATA = {
       html: `<p>The guard first appears in the shared RDS module at <strong>v5.1.0</strong>. This run was triggered by <strong>devSecOpsGuru</strong> after the caller's module source changed from v4.0.0 to v5.1.0.</p><p>The available run data identifies the configuration change, but not the author of the module's internal commit. Open the module version in the registry or its VCS source to confirm ownership.</p>`,
       evidence: ["Run configuration version", "Private registry module metadata"]
     },
-    "Save this Explorer view": {
+    "Save this view": {
       type: "answer",
-      html: `<p>Save the current graph and its RDS module filter so your team can return to this investigation.</p><button class="inline-action" data-action="save-view">Save Explorer view</button>`,
+      html: `<p>Save the current Explorer view and its RDS module version filter so your team can return to this investigation.</p><button class="inline-action" data-action="save-view">Save view</button>`,
       evidence: []
     },
-    "Download this view's data": {
+    "What modules are no longer being used?": {
       type: "answer",
-      html: `<p>Download the five affected workspaces and their replacement-risk status as a CSV file.</p><button class="inline-action" data-action="download-view">Download data</button>`,
-      evidence: []
+      html: `<p>This view is scoped to workspaces using RDS module v5.1.0, so it cannot identify unused modules. Start a new Explorer query across the module inventory to find modules with no current workspace consumers.</p>`,
+      evidence: ["Current Explorer query"]
+    },
+    "When was the last time this module was used?": {
+      type: "answer",
+      html: `<p>The most recent configuration using RDS module v5.1.0 ran today in <strong>my-workspace</strong>. Select a consumer to review its current run and last-updated details.</p>`,
+      evidence: ["Workspace configuration versions", "Current runs"]
     },
     explorerInitial: {
       type: "answer",
-      html: `<p>I can help you analyze your infrastructure data. Ask about workspaces, resources, drift, providers, or dependencies, and I will show simulated results.</p>`,
+      html: `<p>Each operation opens a new session with your current context loaded.</p>`,
       evidence: []
     },
-    "How many EC2 instances exist across my organization?": {
+    "View all resources": {
       type: "answer",
-      html: `<p>There are <strong>47 EC2 instances</strong> managed across 14 workspaces in CoolCorp.</p><ul><li><strong>31</strong> are running in production workspaces</li><li><strong>12</strong> are in staging or development</li><li><strong>4</strong> are currently stopped</li></ul>`,
+      html: `<p>Explorer found <strong>47 managed resources</strong> across the current organization scope.</p>`,
       evidence: ["Explorer resource inventory"]
     },
-    "Which workspaces use AWS provider version 5.x?": {
+    "View all providers": {
       type: "answer",
-      html: `<p><strong>18 workspaces</strong> currently use an AWS provider version in the 5.x series. Twelve use the organization's preferred version, while six are on older 5.x releases.</p><p>You can narrow this view by project, environment, or exact provider version.</p>`,
+      html: `<p>Explorer found the providers currently used across CoolCorp. You can narrow the results by provider name or version.</p>`,
       evidence: ["Workspace provider versions"]
+    },
+    "View all modules": {
+      type: "answer",
+      html: `<p>Explorer found the modules currently used across CoolCorp. Select a module to see its workspace consumers.</p>`,
+      evidence: ["Explorer module inventory"]
+    },
+    "Drifted workspaces": {
+      type: "answer",
+      html: `<p>Explorer found the workspaces currently reporting drift. Select a workspace to review its health and resource details.</p>`,
+      evidence: ["Workspace health assessments"]
     },
     "What resources depend on workspace X?": {
       type: "answer",
