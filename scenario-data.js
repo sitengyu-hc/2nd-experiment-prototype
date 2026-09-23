@@ -41,9 +41,48 @@ window.PROTOTYPE_DATA = {
   explorerPrompts: [
     "View all modules",
     "View all providers",
-    "View all resources",
     "Drifted workspaces"
   ],
+  explorerResults: {
+    "View all modules": {
+      count: 24,
+      unit: "modules",
+      type: "module",
+      summary: "24 modules across 38 workspaces",
+      nodes: [
+        { name: "terraform-aws-rds", detail: "v5.1.0", workspaces: ["payments-prod-eu", "payments-prod-us", "payments-staging"] },
+        { name: "vpc-baseline", detail: "v3.4.2", workspaces: ["networking-prod", "platform-staging"] },
+        { name: "eks-cluster", detail: "v19.5.1", workspaces: ["analytics-prod", "ml-pipeline-prod"] }
+      ]
+    },
+    "View all providers": {
+      count: 12,
+      unit: "providers",
+      type: "provider",
+      summary: "12 providers · 3 versions need review",
+      nodes: [
+        { name: "hashicorp/aws", detail: "v5.82.2", workspaces: ["payments-prod-eu", "payments-prod-us", "networking-prod"] },
+        { name: "hashicorp/kubernetes", detail: "v2.35.1", workspaces: ["analytics-prod", "ml-pipeline-prod"] },
+        { name: "hashicorp/vault", detail: "v4.5.0", workspaces: ["platform-staging", "security-prod"] }
+      ]
+    },
+    "Drifted workspaces": {
+      count: 8,
+      unit: "workspaces",
+      type: "workspace",
+      summary: "4 production workspaces require review",
+      nodes: [
+        { name: "payments-prod-eu", detail: "Drift detected 12m ago", alert: true },
+        { name: "payments-prod-us", detail: "Drift detected 24m ago", alert: true },
+        { name: "analytics-prod", detail: "Drift detected 1h ago", alert: true },
+        { name: "ml-pipeline-prod", detail: "Drift detected 3h ago", alert: true },
+        { name: "payments-staging", detail: "Drift detected 35m ago" },
+        { name: "platform-staging", detail: "Drift detected 2h ago" },
+        { name: "data-warehouse-dev", detail: "Drift detected yesterday" },
+        { name: "infra-baseline-qa", detail: "Drift detected yesterday" }
+      ]
+    }
+  },
   responses: {
     initial: {
       type: "answer",
@@ -94,19 +133,14 @@ window.PROTOTYPE_DATA = {
       html: `<p>Each operation opens a new session with your current context loaded.</p>`,
       evidence: []
     },
-    "View all resources": {
-      type: "answer",
-      html: `<p>Explorer found <strong>47 managed resources</strong> across the current organization scope.</p>`,
-      evidence: ["Explorer resource inventory"]
-    },
     "View all providers": {
       type: "answer",
-      html: `<p>Explorer found the providers currently used across CoolCorp. You can narrow the results by provider name or version.</p>`,
+      html: `<p>You are now viewing <strong>12 providers</strong> used across CoolCorp. Three provider versions need review.</p>`,
       evidence: ["Workspace provider versions"]
     },
     "View all modules": {
       type: "answer",
-      html: `<p>Explorer found the modules currently used across CoolCorp. Select a module to see its workspace consumers.</p>`,
+      html: `<p>You are now viewing <strong>24 modules</strong> used across 38 workspaces.</p>`,
       evidence: ["Explorer module inventory"]
     },
     "Drifted workspaces": {

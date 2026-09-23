@@ -388,6 +388,26 @@ tr.clickable:hover { background: #f1f6ff; }
 .explorer-impact .drifted-topology .graph-node:focus .node-symbol { box-shadow: 0 0 0 5px #f9731633; }
 .explorer-impact .composer-wrap { background: #f1f2f3; }
 .explorer-impact .prompt-toggle { background: #f1f2f3; }
+.explorer-impact .result-summary { position: absolute; z-index: 5; top: 18px; right: 180px; display: flex; align-items: center; gap: 9px; max-width: 260px; padding: 11px 14px; border: 1px solid #b8d0ff; border-radius: 8px; background: #edf4ff; color: #174ea6; box-shadow: 0 5px 14px #0001; }
+.explorer-impact .result-summary span { display: grid; place-content: center; min-width: 30px; height: 30px; border-radius: 50%; background: #1060ff; color: #fff; font-weight: 700; }
+.explorer-impact .result-summary strong { font-size: 12px; line-height: 1.35; }
+.explorer-impact .inventory-topology .graph-node { min-width: 170px; }
+.explorer-impact .inventory-topology .graph-node small { max-width: 165px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.explorer-impact .result-module .node-symbol { background: #14b8a6 !important; }
+.explorer-impact .result-provider .node-symbol { background: #34a853 !important; }
+.explorer-impact .result-resource .node-symbol { background: #e0529c !important; }
+.explorer-impact .result-workspace .node-symbol { background: #9184f7 !important; }
+.explorer-impact .node-dot.result-module, .explorer-impact .result-key { background: #14b8a6; }
+.explorer-impact .node-dot.result-provider, .type-provider .result-key { background: #34a853; }
+.explorer-impact .node-dot.result-resource, .type-resource .result-key { background: #e0529c; }
+.explorer-impact .node-dot.result-workspace, .type-workspace .result-key { background: #9184f7; }
+.explorer-impact .relationship-edges { position: absolute; inset: 0; width: 100%; height: 100%; }
+.explorer-impact .relationship-edges line { stroke: #9ca3af; stroke-width: 1.2; stroke-dasharray: 4 4; }
+.explorer-impact .relationship-topology .graph-node { min-width: 175px; }
+.explorer-impact .relationship-topology .relation-workspace .node-symbol { background: #9184f7 !important; }
+.explorer-impact .relationship-topology .relation-entity strong,
+.explorer-impact .relationship-topology .relation-workspace strong { max-width: 170px; }
+.explorer-impact .relationship-topology .graph-node small { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 @media (max-width: 1050px) {
   :root { --drawer: 390px; }

@@ -146,7 +146,8 @@
 
   function compactExplorerControls() {
     const title = state.impactMode ? "RDS module cross-workspace impact" : state.explorerQuery || "Current Explorer query";
-    const count = state.impactMode ? "5 workspaces" : state.explorerQuery === "Drifted workspaces" ? "8 workspaces" : "Query results";
+    const result = data.explorerResults[state.explorerQuery];
+    const count = state.impactMode ? "5 workspaces" : result ? `${result.count} ${result.unit}` : "Query results";
     return `<div class="compact-query"><span>ACTIVE QUERY</span><strong>${escapeHtml(title)}</strong><small>${count}</small>${state.queryConditions.length ? `<div>${state.queryConditions.map(item => `<code>${item}</code>`).join("")}</div>` : ""}<button data-action="return-explore">← Back to query and results</button></div>`;
   }
 
@@ -154,7 +155,6 @@
     const queryViews = {
       "View all modules": { title: "Modules across CoolCorp", total: "32 modules", type: "module", nodes: ["rds", "vpc-baseline", "iam-roles", "eks", "s3-bucket", "cloudfront"] },
       "View all providers": { title: "Providers across CoolCorp", total: "12 providers", type: "provider", nodes: ["hashicorp/aws", "hashicorp/random", "hashicorp/tls", "hashicorp/vault", "hashicorp/null", "hashicorp/time"] },
-      "View all resources": { title: "Resources across CoolCorp", total: "47 resources", type: "resource", nodes: ["aws_db_instance", "aws_instance", "aws_s3_bucket", "aws_vpc", "aws_iam_role", "aws_security_group"] },
       "Drifted workspaces": { title: "Drifted workspaces", total: "6 workspaces", type: "impact", nodes: ["prod-network", "payments-prod-eu", "analytics-prod", "platform-rds", "legacy-data", "sandbox-testing"] },
       "How many EC2 instances exist across my organization?": { title: "EC2 instances across CoolCorp", total: "47 instances", type: "resource", nodes: ["prod-web-01", "prod-api-02", "staging-web", "analytics-worker", "sandbox-testing", "qa-backend"] },
       "Which workspaces use AWS provider version 5.x?": { title: "AWS provider 5.x usage", total: "18 workspaces", type: "provider", nodes: ["my-workspace", "prod-payments", "prod-catalog", "staging-web", "analytics-worker", "qa-backend"] },
@@ -198,21 +198,29 @@
   }
 
   function explorerResultsCanvas() {
-    return state.explorerQuery === "Drifted workspaces" && !state.impactMode ? driftedWorkspacesCanvas() : topologyCanvas();
+    const result = data.explorerResults[state.explorerQuery];
+    if (!state.impactMode && ["module", "provider"].includes(result?.type)) return relationshipResultsCanvas(result);
+    return !state.impactMode && result ? inventoryResultsCanvas(result) : topologyCanvas();
   }
 
-  function driftedWorkspacesCanvas() {
-    const workspaces = [
-      ["payments-prod-eu", 32, 28, true],
-      ["payments-staging", 47, 28, false],
-      ["payments-prod-us", 32, 39, true],
-      ["platform-staging", 47, 39, false],
-      ["analytics-prod", 32, 50, true],
-      ["data-warehouse-dev", 47, 50, false],
-      ["ml-pipeline-prod", 32, 61, true],
-      ["infra-baseline-qa", 47, 61, false]
-    ];
-    return `<div class="topology drifted-topology" aria-label="Drifted workspaces"><div class="risk-banner"><span>!</span><strong>2 of these are production workspaces — changes carry elevated risk</strong></div>${workspaces.map(([name, x, y, risk]) => `<button class="graph-node consumer" style="left:${x}%;top:${y}%" data-result-node="${name}"><span class="node-symbol">▤</span>${risk ? '<i>!</i>' : ''}<strong>${name}</strong><small>workspace</small></button>`).join("")}<div class="zoom-tools"><button>20%</button><button class="active">50%</button><button>100%</button></div><div class="legend"><span><i class="workspace-key"></i> Workspace</span><span><i class="selected-key"></i> selected</span><span><i class="consumer-key"></i> direct dependent</span></div></div>`;
+  function inventoryResultsCanvas(result) {
+    const positions = [[32, 28], [47, 28], [32, 39], [47, 39], [32, 50], [47, 50], [32, 61], [47, 61]];
+    const symbol = { module: "▱", provider: "⬡", resource: "◇", workspace: "▤" }[result.type];
+    return `<div class="topology inventory-topology type-${result.type}" aria-label="${escapeHtml(state.explorerQuery)}"><div class="result-summary"><span>${result.count}</span><strong>${escapeHtml(result.summary)}</strong></div>${result.nodes.map((node, index) => `<button class="graph-node result-${result.type} ${state.selectedNode === node.name ? "is-focused" : ""}" style="left:${positions[index][0]}%;top:${positions[index][1]}%" data-result-node="${node.name}"><span class="node-symbol">${symbol}</span>${node.alert ? '<i>!</i>' : ''}<strong>${node.name}</strong><small>${node.detail}</small></button>`).join("")}<div class="zoom-tools"><button>20%</button><button class="active">50%</button><button>100%</button></div><div class="legend"><span><i class="result-key"></i> ${result.type}</span><span><i class="selected-key"></i> selected</span></div></div>`;
+  }
+
+  function relationshipResultsCanvas(result) {
+    const entityPositions = [[31, 27], [31, 45], [31, 63]];
+    const workspaceNames = [...new Set(result.nodes.flatMap(node => node.workspaces))];
+    const workspacePositions = workspaceNames.map((_, index) => [55, 22 + index * (52 / Math.max(workspaceNames.length - 1, 1))]);
+    const workspacePosition = Object.fromEntries(workspaceNames.map((name, index) => [name, workspacePositions[index]]));
+    const lines = result.nodes.flatMap((node, nodeIndex) => node.workspaces.map(name => {
+      const [x1, y1] = entityPositions[nodeIndex];
+      const [x2, y2] = workspacePosition[name];
+      return `<line x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%"/>`;
+    })).join("");
+    const symbol = result.type === "module" ? "▱" : "⬡";
+    return `<div class="topology relationship-topology type-${result.type}" aria-label="${escapeHtml(state.explorerQuery)}"><div class="result-summary"><span>${result.count}</span><strong>${escapeHtml(result.summary)}</strong></div><svg class="relationship-edges" aria-hidden="true">${lines}</svg>${result.nodes.map((node, index) => `<button class="graph-node relation-entity result-${result.type} ${state.selectedNode === node.name ? "is-focused" : ""}" style="left:${entityPositions[index][0]}%;top:${entityPositions[index][1]}%" data-result-node="${node.name}"><span class="node-symbol">${symbol}</span><strong>${node.name}</strong><small>${node.detail}</small></button>`).join("")}${workspaceNames.map(name => `<button class="graph-node relation-workspace ${state.selectedNode === name ? "is-focused" : ""}" style="left:${workspacePosition[name][0]}%;top:${workspacePosition[name][1]}%" data-result-node="${name}"><span class="node-symbol">▤</span><strong>${name}</strong><small>workspace</small></button>`).join("")}<div class="zoom-tools"><button>20%</button><button class="active">50%</button><button>100%</button></div><div class="legend"><span><i class="result-key"></i> ${result.type}</span><span><i class="workspace-key"></i> workspace</span><span><i class="selected-key"></i> selected</span></div></div>`;
   }
 
   function impactResultsPanel() {
@@ -263,18 +271,12 @@
     return `<section class="advisor-results"><div class="returned-heading"><span>RETURNED NODES</span></div><label class="node-search">⌕ <input placeholder="Search nodes"></label><div class="returned-nodes"><button class="module-result" data-action="select-module"><i class="node-dot module"></i><span>labels/aws</span><small>View information</small></button>${consumers.map(node => returnedWorkspaceRow(node)).join("")}</div><div class="result-pagination"><span>1–6 of 6</span><span>‹　<strong>1</strong>　2　›</span></div></section>`;
   }
 
-  function driftedResultsPanel() {
-    const workspaces = [
-      ["payments-prod-eu", true],
-      ["payments-prod-us", true],
-      ["analytics-prod", true],
-      ["ml-pipeline-prod", true],
-      ["payments-staging", false],
-      ["platform-staging", false],
-      ["data-warehouse-dev", false],
-      ["infra-baseline-qa", false]
-    ];
-    return `<section class="advisor-results"><div class="returned-heading"><span>RETURNED NODES</span></div><label class="node-search">⌕ <input placeholder="Search nodes"></label><div class="returned-nodes">${workspaces.map(([name, risk]) => `<button data-result-node="${name}"><i class="node-dot"></i><span>${name}</span>${risk ? '<small class="risk-node">!</small>' : ''}</button>`).join("")}</div><div class="result-pagination"><span>1–6 of 6</span><span>‹　<strong>1</strong>　2　›</span></div></section>`;
+  function inventoryResultsPanel() {
+    const result = data.explorerResults[state.explorerQuery];
+    const rows = ["module", "provider"].includes(result.type)
+      ? result.nodes.flatMap(node => node.workspaces.map(workspace => ({ name: workspace, detail: `${node.name} ${node.detail}` })))
+      : result.nodes;
+    return `<section class="advisor-results"><div class="returned-heading"><span>RETURNED NODES</span></div><label class="node-search">⌕ <input placeholder="Search nodes"></label><div class="returned-nodes">${rows.map(node => `<button data-result-node="${node.name}"><i class="node-dot ${["module", "provider"].includes(result.type) ? "result-workspace" : `result-${result.type}`}"></i><span>${node.name}</span>${node.alert ? '<small class="risk-node">!</small>' : `<small>${node.detail}</small>`}</button>`).join("")}</div><div class="result-pagination"><span>1–${rows.length} of ${rows.length}</span><span>‹　<strong>1</strong>　2　›</span></div></section>`;
   }
 
   function returnedWorkspaceRows(consumers, excludedName) {
@@ -401,7 +403,7 @@
       const hasUserQuestion = state.messages.slice(0, index).some(item => item.role === "user");
       const feedback = message.feedback && hasUserQuestion ? `<div class="feedback"><span>Did this response answer your question?</span><button aria-label="Thumbs up" title="Thumbs up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v11H3V10h4Zm0 10h10.4a2 2 0 0 0 2-1.7l1.3-7A2 2 0 0 0 18.8 9H14l.7-3.4A2.2 2.2 0 0 0 12.5 3L7 10Z"/></svg></button><button aria-label="Thumbs down" title="Thumbs down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V3H3v11h4Zm0-10h10.4a2 2 0 0 1 2 1.7l1.3 7a2 2 0 0 1-1.9 2.3H14l.7 3.4a2.2 2.2 0 0 1-2.2 2.6L7 14Z"/></svg></button></div>` : "";
       return `<article class="message advisor-message">${html}${message.evidence && message.evidence.length ? `<div class="references"><span>References</span>${message.evidence.map(item => `<a href="#" data-reference>${item}</a>`).join("")}</div>` : ""}${feedback}</article>`;
-    }).join("") + (state.impactMode ? impactResultsPanel() : state.explorerQuery === "Drifted workspaces" ? driftedResultsPanel() : "");
+    }).join("") + (state.impactMode ? impactResultsPanel() : data.explorerResults[state.explorerQuery] ? inventoryResultsPanel() : "");
     const prompts = state.advisorJourney === "explorer" ? data.explorerPrompts : state.impactMode ? data.impactPrompts : data.suggestedPrompts;
     promptMenu.innerHTML = `<button id="prompt-toggle" class="prompt-toggle" type="button" aria-expanded="${state.promptsOpen}">Inspect further <span>${state.promptsOpen ? "⌃" : "⌄"}</span></button><div class="prompt-list" ${state.promptsOpen ? "" : "hidden"}>${prompts.map(prompt => `<button data-prompt="${prompt}">${prompt}</button>`).join("")}</div>`;
     requestAnimationFrame(() => {
