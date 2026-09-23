@@ -174,12 +174,13 @@ tr.clickable:hover { background: #f1f6ff; }
 .feedback svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
 .composer-wrap { position: relative; flex-shrink: 0; border-top: 1px solid #c2c5cb; padding: 0 11px; background: #f1f2f3; }
 .composer-wrap[hidden] { display: none; }
+.prompt-menu { margin: 0 -11px; padding: 0 16px 8px; border-bottom: 1px solid #c2c5cb; background: #f1f2f3; }
 .prompt-toggle { width: 100%; display: flex; justify-content: space-between; border: 0; background: transparent; padding: 12px 4px 8px; color: #515562; font-weight: 650; font-size: 12px; }
 .prompt-toggle { cursor: pointer; }
 .prompt-list { display: grid; gap: 6px; padding-bottom: 9px; }
 .prompt-list[hidden] { display: none; }
-.prompt-list button { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: #fff; text-align: left; padding: 8px 10px; cursor: pointer; font-size: 12px; }
-.prompt-list button:hover { border-color: #7651f6; background: #f8f5ff; }
+.prompt-list button { width: 100%; border: 1px solid #1060ff; border-radius: 18px; background: #fff; color: #075bd8; text-align: left; padding: 8px 14px; cursor: pointer; font-size: 12px; }
+.prompt-list button:hover { background: #e7efff; }
 .history-toggle { position: static; flex: 0 0 56px; display: flex; align-items: center; justify-content: center; gap: 3px; width: 56px; height: 36px; border: 1px solid #3b3d4566; border-radius: 6px; background: #fff; color: #3b3d45; padding: 0; cursor: pointer; }
 .history-toggle:hover { color: #1060ff; }
 .history-icon { font-size: 16px; line-height: 1; }.history-chevron { color: #1060ff; font-size: 12px; line-height: 1; }
@@ -380,13 +381,11 @@ tr.clickable:hover { background: #f1f6ff; }
 .explorer-impact .result-actions button { display: flex; justify-content: center; gap: 8px; min-height: 38px; border: 1px solid #aeb1b7; border-radius: 5px; background: #fff; color: #353840; font-weight: 600; cursor: pointer; }
 .explorer-impact .result-actions .primary-action { border-color: #1060ff; background: #1060ff; color: #fff; }
 .explorer-impact .prompt-list[hidden] { display: none; }
-.explorer-impact .prompt-list button { border-color: #1060ff; border-radius: 18px; color: #075bd8; padding: 8px 14px; }
 .explorer-impact .prompt-toggle { color: #656a76; letter-spacing: .06em; }
 .explorer-impact .drifted-topology .graph-node { min-width: 120px; }
 .explorer-impact .drifted-topology .graph-node.is-focused .node-symbol,
 .explorer-impact .drifted-topology .graph-node:focus .node-symbol { box-shadow: 0 0 0 5px #f9731633; }
 .explorer-impact .composer-wrap { background: #f1f2f3; }
-.explorer-impact .prompt-menu { margin: 0 -11px; padding: 0 16px 8px; border-bottom: 1px solid #c2c5cb; background: #f1f2f3; }
 .explorer-impact .prompt-toggle { background: #f1f2f3; }
 
 @media (max-width: 1050px) {
