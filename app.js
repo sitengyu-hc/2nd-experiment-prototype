@@ -194,7 +194,7 @@
       const x1 = center.x * 10, y1 = center.y * 6.5, x2 = position.x * 10, y2 = position.y * 6.5;
       return `<path class="${node.relation}" d="M${x1} ${y1} C${(x1 + x2) / 2} ${y1}, ${(x1 + x2) / 2} ${y2}, ${x2} ${y2}" marker-end="url(#arrow-${node.relation})"/>`;
     }).join("");
-    return `<div class="topology" aria-label="RDS module consumers"><div class="risk-banner"><span>!</span><strong>2 of these are production workspaces — changes carry elevated risk</strong></div><svg class="edges" viewBox="0 0 1000 650" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="arrow-consumer" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker></defs>${lines}</svg><button class="module-node" style="left:${center.x}%;top:${center.y}%" data-action="select-module"><span>▣</span><strong>labels/aws</strong><small>v1.3.0</small></button>${consumers.map((node, index) => `<button class="graph-node ${node.relation} ${state.selectedNode === node.name ? "is-focused" : ""}" style="left:${positions[index].x}%;top:${positions[index].y}%" data-node="${node.name}"><span class="node-symbol">▤</span><strong>${node.name}</strong><small>workspace</small></button>`).join("")}<div class="zoom-tools"><button>20%</button><button class="active">50%</button><button>100%</button></div><div class="legend"><span><i class="workspace-key"></i> Workspace</span><span><i class="selected-key"></i> selected</span><span><i class="consumer-key"></i> direct dependent</span></div></div>`;
+    return `<div class="topology" aria-label="RDS module consumers"><div class="risk-banner"><span>!</span><strong>2 of these are production workspaces — changes carry elevated risk</strong></div><svg class="edges" viewBox="0 0 1000 650" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="arrow-consumer" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker></defs>${lines}</svg><button class="module-node" style="left:${center.x}%;top:${center.y}%" data-action="select-module"><span>▣</span><strong>labels/aws</strong><small>v1.3.0</small></button>${consumers.map((node, index) => `<button class="graph-node ${node.relation} ${state.selectedNode === node.name ? "is-focused" : ""}" style="left:${positions[index].x}%;top:${positions[index].y}%" data-impact-node="${node.name}"><span class="node-symbol">▤</span><strong>${node.name}</strong><small>workspace</small></button>`).join("")}<div class="zoom-tools"><button>20%</button><button class="active">50%</button><button>100%</button></div><div class="legend"><span><i class="workspace-key"></i> Workspace</span><span><i class="selected-key"></i> selected</span><span><i class="consumer-key"></i> direct dependent</span></div></div>`;
   }
 
   function explorerResultsCanvas() {
@@ -273,10 +273,57 @@
 
   function inventoryResultsPanel() {
     const result = data.explorerResults[state.explorerQuery];
-    const rows = ["module", "provider"].includes(result.type)
-      ? result.nodes.flatMap(node => node.workspaces.map(workspace => ({ name: workspace, detail: `${node.name} ${node.detail}` })))
-      : result.nodes;
-    return `<section class="advisor-results"><div class="returned-heading"><span>RETURNED NODES</span></div><label class="node-search">⌕ <input placeholder="Search nodes"></label><div class="returned-nodes">${rows.map(node => `<button data-result-node="${node.name}"><i class="node-dot ${["module", "provider"].includes(result.type) ? "result-workspace" : `result-${result.type}`}"></i><span>${node.name}</span>${node.alert ? '<small class="risk-node">!</small>' : `<small>${node.detail}</small>`}</button>`).join("")}</div><div class="result-pagination"><span>1–${rows.length} of ${rows.length}</span><span>‹　<strong>1</strong>　2　›</span></div></section>`;
+    const relationshipResult = ["module", "provider"].includes(result.type);
+    const entities = relationshipResult ? result.nodes.map(node => ({ ...node, kind: result.type })) : [];
+    const workspaces = relationshipResult
+      ? [...new Set(result.nodes.flatMap(node => node.workspaces))].map(name => ({
+          name,
+          kind: "workspace",
+          detail: result.nodes.filter(node => node.workspaces.includes(name)).map(node => `${node.name} ${node.detail}`).join(", ")
+        }))
+      : result.nodes.map(node => ({ ...node, kind: "workspace" }));
+    const rows = [...entities, ...workspaces];
+    const selected = rows.find(node => node.name === state.selectedNode);
+    const visibleRows = selected ? rows.filter(node => node.name !== selected.name) : rows;
+    return `<section class="advisor-results"><div class="returned-heading"><span>RETURNED NODES</span></div><label class="node-search">⌕ <input placeholder="Search nodes"></label>${selected ? explorerSelectionCard(selected, result) : ""}<div class="returned-nodes ${selected ? "remaining-results" : ""}">${visibleRows.map(node => explorerResultRow(node, result.type)).join("")}</div><div class="result-pagination"><span>1–${rows.length} of ${rows.length}</span><span>‹　<strong>1</strong>　2　›</span></div></section>`;
+  }
+
+  function explorerResultRow(node, resultType) {
+    const dotType = node.kind === "workspace" ? "workspace" : resultType;
+    return `<button data-result-node="${node.name}"><i class="node-dot result-${dotType}"></i><span>${node.name}</span>${node.alert ? '<small class="risk-node">!</small>' : `<small>${node.detail}</small>`}</button>`;
+  }
+
+  function explorerSelectionCard(node, result) {
+    const isWorkspace = node.kind === "workspace";
+    const details = isWorkspace
+      ? [
+          ["Project name", node.name.includes("prod") ? "production" : "platform"],
+          ["Current run ID", "run-J7pR4NkL9sQw2Vx"],
+          ["Run status", node.alert ? "drifted" : "applied"],
+          ["Current run applied", "Mar 12, 2025 11:22:05 am"],
+          ["VCS repo", `example1/${node.name}`],
+          ["Terraform version", "1.8.5"],
+          ["Drifted", node.alert ? "true" : "false"],
+          ["Resource count", "34"],
+          [result.type === "module" ? "Modules" : result.type === "provider" ? "Providers" : "Context", node.detail]
+        ]
+      : [
+          ["Type", node.kind],
+          ["Version", node.detail],
+          ["Workspace count", String(node.workspaces.length)],
+          ["Workspaces", node.workspaces.join(", ")],
+          ["Source", node.kind === "module" ? `app.terraform.io/CoolCorp/${node.name}` : `registry.terraform.io/${node.name}`],
+          ["Last updated", "Mar 12 2025"]
+        ];
+    const actions = isWorkspace ? `<div class="result-actions"><button>View resources <span>→</span></button><button>View modules <span>→</span></button><button>View providers <span>→</span></button><button class="primary-action">View blast radius <span>→</span></button></div>` : "";
+    return `<div class="selected-result explorer-selection ${isWorkspace ? "workspace-result" : ""}"><button class="selected-result-title" data-action="hide-node-details"><i class="node-dot result-${node.kind}"></i><strong>${node.name}</strong><span>Hide information</span></button><dl>${details.map(([term, value]) => `<div><dt>${term}</dt><dd>${value}</dd></div>`).join("")}</dl>${actions}</div>`;
+  }
+
+  function selectExplorerResult(name, showPrompts = false) {
+    state.selectedNode = name;
+    if (showPrompts) state.promptsOpen = true;
+    renderMain();
+    renderConversation();
   }
 
   function returnedWorkspaceRows(consumers, excludedName) {
@@ -486,12 +533,11 @@
       openAdvisor();
     }
     if (action?.dataset.action === "select-module") {
-      state.selectedNode = "labels/aws";
-      renderMain();
-      renderConversation();
+      selectExplorerResult("labels/aws");
     }
     if (action?.dataset.action === "hide-node-details") {
       state.selectedNode = null;
+      renderMain();
       renderConversation();
     }
     if (action?.dataset.action === "ask-advisor") { openAdvisor(); input.focus(); }
@@ -583,21 +629,21 @@
 
     const node = event.target.closest("[data-node]");
     if (node) {
-      openInspector(node.dataset.node);
+      if (state.view === "explorer" && (state.impactMode || state.explorerQuery)) {
+        selectExplorerResult(node.dataset.node, state.impactMode);
+      } else {
+        openInspector(node.dataset.node);
+      }
     }
 
     const impactNode = event.target.closest("[data-impact-node]");
     if (impactNode) {
-      state.selectedNode = impactNode.dataset.impactNode;
-      state.promptsOpen = true;
-      renderMain();
-      renderConversation();
+      selectExplorerResult(impactNode.dataset.impactNode, true);
     }
 
     const resultNode = event.target.closest("[data-result-node]");
     if (resultNode) {
-      state.selectedNode = resultNode.dataset.resultNode;
-      renderMain();
+      selectExplorerResult(resultNode.dataset.resultNode);
     }
   });
 

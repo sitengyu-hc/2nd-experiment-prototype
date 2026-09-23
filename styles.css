@@ -408,6 +408,8 @@ tr.clickable:hover { background: #f1f6ff; }
 .explorer-impact .relationship-topology .relation-entity strong,
 .explorer-impact .relationship-topology .relation-workspace strong { max-width: 170px; }
 .explorer-impact .relationship-topology .graph-node small { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.explorer-impact .node-dot.result-workspace { background: #9184f7; }
+.explorer-impact .explorer-selection { margin-bottom: 8px; border-radius: 16px; }
 
 @media (max-width: 1050px) {
   :root { --drawer: 390px; }
