@@ -111,7 +111,7 @@ window.PROTOTYPE_DATA = {
     },
     "Drifted workspaces": {
       type: "answer",
-      html: `<p>Explorer found the workspaces currently reporting drift. Select a workspace to review its health and resource details.</p>`,
+      html: `<p>You are now viewing <strong>8 workspaces</strong> that are drifted.</p>`,
       evidence: ["Workspace health assessments"]
     },
     "What resources depend on workspace X?": {

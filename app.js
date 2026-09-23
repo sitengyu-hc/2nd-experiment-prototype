@@ -67,9 +67,12 @@
   }
 
   function renderMain() {
+    const explorerResults = state.view === "explorer" && (state.impactMode || Boolean(state.explorerQuery));
     document.body.classList.toggle("explorer-view", state.view === "explorer");
-    document.body.classList.toggle("explorer-impact", state.view === "explorer" && state.impactMode);
-    document.body.classList.toggle("explorer-direct", state.view === "explorer" && !state.impactMode);
+    document.body.classList.toggle("explorer-impact", explorerResults);
+    document.body.classList.toggle("explorer-direct", state.view === "explorer" && !explorerResults);
+    document.querySelector(".app-shell").style.paddingLeft = explorerResults ? "16px" : "";
+    document.querySelector(".side-nav").style.width = explorerResults ? "16px" : "";
     if (state.view === "workspaces") main.innerHTML = workspacesView();
     if (state.view === "run") main.innerHTML = runView();
     if (state.view === "explorer") main.innerHTML = explorerView();
@@ -115,7 +118,8 @@
   }
 
   function explorerView() {
-    const compact = state.explorerMode !== "explore";
+    const showingResults = state.impactMode || Boolean(state.explorerQuery);
+    const compact = showingResults || state.explorerMode !== "explore";
     return `<div class="explorer-page explorer-mode-${state.explorerMode} ${state.explorerPanelHidden ? "panel-hidden" : ""}">
       <section class="explorer-controls">
         <button class="hud-hide" data-action="toggle-explorer-panel">HIDE</button>
@@ -124,7 +128,7 @@
         ${compact ? compactExplorerControls() : `<label class="field-label">VIEW MODE</label><div class="view-toggle"><button data-display="graph" class="${state.explorerDisplay === "graph" ? "active" : ""}">Graph</button><button data-display="table" class="${state.explorerDisplay === "table" ? "active" : ""}">Table View</button></div><label class="field-label">BROWSE</label><div class="browse-control"><button class="select-control" data-action="toggle-browse" aria-expanded="${state.browseOpen}">Types, Use cases and Saved views <span>${state.browseOpen ? "⌃" : "⌄"}</span></button>${state.browseOpen ? browseMenu() : ""}</div>${state.impactMode ? impactViewControls() : defaultExplorerControls()}`}
       </section>
       <button class="hud-show" data-action="toggle-explorer-panel">VIEW</button>
-      ${state.impactMode ? (state.explorerDisplay === "graph" ? topologyCanvas() : impactTable()) : state.explorerQuery ? explorerQueryVisualization() : `<div class="empty-explorer"><div class="empty-icon">⌘</div><strong>Get started.</strong><span>Select a Type or Use case to explore your infrastructure.</span></div>`}
+      ${showingResults ? (state.explorerDisplay === "graph" ? explorerResultsCanvas() : impactTable()) : `<div class="empty-explorer"><div class="empty-icon">⌘</div><strong>Get started.</strong><span>Select a Type or Use case to explore your infrastructure.</span></div>`}
       ${state.modal === "saved-views" ? savedViewsModal() : ""}
       ${state.modal === "save-view" ? saveViewModal() : ""}
     </div>`;
@@ -142,7 +146,7 @@
 
   function compactExplorerControls() {
     const title = state.impactMode ? "RDS module cross-workspace impact" : state.explorerQuery || "Current Explorer query";
-    const count = state.impactMode ? "5 workspaces" : "Query results";
+    const count = state.impactMode ? "5 workspaces" : state.explorerQuery === "Drifted workspaces" ? "8 workspaces" : "Query results";
     return `<div class="compact-query"><span>ACTIVE QUERY</span><strong>${escapeHtml(title)}</strong><small>${count}</small>${state.queryConditions.length ? `<div>${state.queryConditions.map(item => `<code>${item}</code>`).join("")}</div>` : ""}<button data-action="return-explore">← Back to query and results</button></div>`;
   }
 
@@ -193,8 +197,27 @@
     return `<div class="topology" aria-label="RDS module consumers"><div class="risk-banner"><span>!</span><strong>2 of these are production workspaces — changes carry elevated risk</strong></div><svg class="edges" viewBox="0 0 1000 650" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="arrow-consumer" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker></defs>${lines}</svg><button class="module-node" style="left:${center.x}%;top:${center.y}%" data-action="select-module"><span>▣</span><strong>labels/aws</strong><small>v1.3.0</small></button>${consumers.map((node, index) => `<button class="graph-node ${node.relation} ${state.selectedNode === node.name ? "is-focused" : ""}" style="left:${positions[index].x}%;top:${positions[index].y}%" data-node="${node.name}"><span class="node-symbol">▤</span><strong>${node.name}</strong><small>workspace</small></button>`).join("")}<div class="zoom-tools"><button>20%</button><button class="active">50%</button><button>100%</button></div><div class="legend"><span><i class="workspace-key"></i> Workspace</span><span><i class="selected-key"></i> selected</span><span><i class="consumer-key"></i> direct dependent</span></div></div>`;
   }
 
+  function explorerResultsCanvas() {
+    return state.explorerQuery === "Drifted workspaces" && !state.impactMode ? driftedWorkspacesCanvas() : topologyCanvas();
+  }
+
+  function driftedWorkspacesCanvas() {
+    const workspaces = [
+      ["payments-prod-eu", 32, 28, true],
+      ["payments-staging", 47, 28, false],
+      ["payments-prod-us", 32, 39, true],
+      ["platform-staging", 47, 39, false],
+      ["analytics-prod", 32, 50, true],
+      ["data-warehouse-dev", 47, 50, false],
+      ["ml-pipeline-prod", 32, 61, true],
+      ["infra-baseline-qa", 47, 61, false]
+    ];
+    return `<div class="topology drifted-topology" aria-label="Drifted workspaces"><div class="risk-banner"><span>!</span><strong>2 of these are production workspaces — changes carry elevated risk</strong></div>${workspaces.map(([name, x, y, risk]) => `<button class="graph-node consumer" style="left:${x}%;top:${y}%" data-result-node="${name}"><span class="node-symbol">▤</span>${risk ? '<i>!</i>' : ''}<strong>${name}</strong><small>workspace</small></button>`).join("")}<div class="zoom-tools"><button>20%</button><button class="active">50%</button><button>100%</button></div><div class="legend"><span><i class="workspace-key"></i> Workspace</span><span><i class="selected-key"></i> selected</span><span><i class="consumer-key"></i> direct dependent</span></div></div>`;
+  }
+
   function impactResultsPanel() {
     const consumers = data.affectedWorkspaces.slice(1);
+    const workspace = consumers.find(node => node.name === state.selectedNode);
     if (state.selectedNode === "labels/aws") {
       const details = [
         ["Project name", "platform"],
@@ -216,9 +239,51 @@
         ["Resource count", "21"],
         ["Tags", "platform, aws"]
       ];
-      return `<section class="advisor-results"><div class="returned-heading"><span>RETURNED NODES</span></div><label class="node-search">⌕ <input placeholder="Search nodes"></label><div class="selected-result"><button class="selected-result-title" data-action="hide-module-details"><i class="node-dot module"></i><strong>labels/aws</strong><span>Hide information</span></button><dl>${details.map(([term, value]) => `<div><dt>${term}</dt><dd>${value}</dd></div>`).join("")}</dl></div></section>`;
+      return `<section class="advisor-results"><div class="returned-heading"><span>RETURNED NODES</span></div><label class="node-search">⌕ <input placeholder="Search nodes"></label><div class="selected-result"><button class="selected-result-title" data-action="hide-node-details"><i class="node-dot module"></i><strong>labels/aws</strong><span>Hide information</span></button><dl>${details.map(([term, value]) => `<div><dt>${term}</dt><dd>${value}</dd></div>`).join("")}</dl></div>${returnedWorkspaceRows(consumers)}</section>`;
     }
-    return `<section class="advisor-results"><div class="returned-heading"><span>RETURNED NODES</span></div><label class="node-search">⌕ <input placeholder="Search nodes"></label><div class="returned-nodes"><button class="module-result" data-action="select-module"><i class="node-dot module"></i><span>labels/aws</span><small>View information</small></button>${consumers.map(node => `<button data-node="${node.name}"><i class="node-dot consumer"></i><span>${node.name}</span>${node.environment === "production" ? '<small class="risk-node">!</small>' : '<small>View information</small>'}</button>`).join("")}</div><div class="result-pagination"><span>1–6 of 6</span><span>‹　<strong>1</strong>　2　›</span></div></section>`;
+    if (workspace) {
+      const details = [
+        ["Project name", "payments"],
+        ["Current run ID", "run-J7pR4NkL9sQw2Vx"],
+        ["Run status", workspace.runStatus],
+        ["Current run applied", "Mar 11, 2025 4:18:42 pm"],
+        ["VCS repo", `example1/${workspace.name}`],
+        ["Module count", "8"],
+        ["Provider count", "28"],
+        ["Providers", "registry.terraform.io/hashicorp/aws"],
+        ["Terraform version", "1.5.0"],
+        ["Drifted", "false"],
+        ["Resource count", String(workspace.resources)],
+        ["Tags", `payments, ${workspace.environment}, eu`],
+        ["Created", "Feb 3 2024"],
+        ["Updated", "Mar 11 2025"]
+      ];
+      return `<section class="advisor-results"><div class="returned-heading"><span>RETURNED NODES</span></div><label class="node-search">⌕ <input placeholder="Search nodes"></label><div class="selected-result workspace-result"><button class="selected-result-title" data-action="hide-node-details"><i class="node-dot consumer"></i><strong>${workspace.name}</strong><span>Hide information</span></button><dl>${details.map(([term, value]) => `<div><dt>${term}</dt><dd>${value}</dd></div>`).join("")}</dl><div class="result-actions"><button>View resources <span>→</span></button><button>View modules <span>→</span></button><button>View providers <span>→</span></button><button class="primary-action" data-action="show-node-impact">View blast radius <span>→</span></button></div></div>${returnedWorkspaceRows(consumers, workspace.name)}</section>`;
+    }
+    return `<section class="advisor-results"><div class="returned-heading"><span>RETURNED NODES</span></div><label class="node-search">⌕ <input placeholder="Search nodes"></label><div class="returned-nodes"><button class="module-result" data-action="select-module"><i class="node-dot module"></i><span>labels/aws</span><small>View information</small></button>${consumers.map(node => returnedWorkspaceRow(node)).join("")}</div><div class="result-pagination"><span>1–6 of 6</span><span>‹　<strong>1</strong>　2　›</span></div></section>`;
+  }
+
+  function driftedResultsPanel() {
+    const workspaces = [
+      ["payments-prod-eu", true],
+      ["payments-prod-us", true],
+      ["analytics-prod", true],
+      ["ml-pipeline-prod", true],
+      ["payments-staging", false],
+      ["platform-staging", false],
+      ["data-warehouse-dev", false],
+      ["infra-baseline-qa", false]
+    ];
+    return `<section class="advisor-results"><div class="returned-heading"><span>RETURNED NODES</span></div><label class="node-search">⌕ <input placeholder="Search nodes"></label><div class="returned-nodes">${workspaces.map(([name, risk]) => `<button data-result-node="${name}"><i class="node-dot"></i><span>${name}</span>${risk ? '<small class="risk-node">!</small>' : ''}</button>`).join("")}</div><div class="result-pagination"><span>1–6 of 6</span><span>‹　<strong>1</strong>　2　›</span></div></section>`;
+  }
+
+  function returnedWorkspaceRows(consumers, excludedName) {
+    const rows = consumers.filter(node => node.name !== excludedName).map(node => returnedWorkspaceRow(node)).join("");
+    return `<div class="returned-nodes remaining-results">${rows}</div>`;
+  }
+
+  function returnedWorkspaceRow(node) {
+    return `<button data-impact-node="${node.name}"><i class="node-dot consumer"></i><span>${node.name}</span>${node.environment === "production" ? '<small class="risk-node">!</small>' : '<small>View information</small>'}</button>`;
   }
 
   function impactTable() {
@@ -299,11 +364,17 @@
   function ask(question) {
     const response = getResponse(question);
     state.promptsOpen = false;
-    state.messages.push({ role: "user", text: question });
-    state.messages.push({ role: "advisor", ...response });
     if (state.view === "explorer" && state.advisorJourney === "explorer") {
+      state.messages = [{ role: "advisor", ...response }];
       state.explorerQuery = question;
+      state.explorerMode = "converse";
+      state.navCollapsed = true;
+      state.selectedNode = null;
+      document.body.classList.add("nav-collapsed");
       renderMain();
+    } else {
+      state.messages.push({ role: "user", text: question });
+      state.messages.push({ role: "advisor", ...response });
     }
     renderConversation();
   }
@@ -330,11 +401,11 @@
       const hasUserQuestion = state.messages.slice(0, index).some(item => item.role === "user");
       const feedback = message.feedback && hasUserQuestion ? `<div class="feedback"><span>Did this response answer your question?</span><button aria-label="Thumbs up" title="Thumbs up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v11H3V10h4Zm0 10h10.4a2 2 0 0 0 2-1.7l1.3-7A2 2 0 0 0 18.8 9H14l.7-3.4A2.2 2.2 0 0 0 12.5 3L7 10Z"/></svg></button><button aria-label="Thumbs down" title="Thumbs down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V3H3v11h4Zm0-10h10.4a2 2 0 0 1 2 1.7l1.3 7a2 2 0 0 1-1.9 2.3H14l.7 3.4a2.2 2.2 0 0 1-2.2 2.6L7 14Z"/></svg></button></div>` : "";
       return `<article class="message advisor-message">${html}${message.evidence && message.evidence.length ? `<div class="references"><span>References</span>${message.evidence.map(item => `<a href="#" data-reference>${item}</a>`).join("")}</div>` : ""}${feedback}</article>`;
-    }).join("") + (state.impactMode ? impactResultsPanel() : "");
+    }).join("") + (state.impactMode ? impactResultsPanel() : state.explorerQuery === "Drifted workspaces" ? driftedResultsPanel() : "");
     const prompts = state.advisorJourney === "explorer" ? data.explorerPrompts : state.impactMode ? data.impactPrompts : data.suggestedPrompts;
     promptMenu.innerHTML = `<button id="prompt-toggle" class="prompt-toggle" type="button" aria-expanded="${state.promptsOpen}">Inspect further <span>${state.promptsOpen ? "⌃" : "⌄"}</span></button><div class="prompt-list" ${state.promptsOpen ? "" : "hidden"}>${prompts.map(prompt => `<button data-prompt="${prompt}">${prompt}</button>`).join("")}</div>`;
     requestAnimationFrame(() => {
-      conversation.scrollTop = state.impactMode ? 0 : conversation.scrollHeight;
+      conversation.scrollTop = state.impactMode || state.explorerQuery ? 0 : conversation.scrollHeight;
     });
   }
 
@@ -370,6 +441,17 @@
     if (nav) {
       const directExplorerEntry = nav.dataset.nav === "explorer";
       const runEntry = nav.dataset.nav === "run";
+      if (directExplorerEntry) {
+        state.impactMode = false;
+        state.explorerQuery = null;
+        state.queryDraft = null;
+        state.queryConditions = [];
+        state.selectedNode = null;
+        state.explorerMode = "explore";
+        state.navCollapsed = false;
+        state.messages = [];
+        state.promptsOpen = true;
+      }
       setView(nav.dataset.nav, {
         impactMode: false,
         advisorJourney: directExplorerEntry ? "explorer" : "run"
@@ -406,7 +488,7 @@
       renderMain();
       renderConversation();
     }
-    if (action?.dataset.action === "hide-module-details") {
+    if (action?.dataset.action === "hide-node-details") {
       state.selectedNode = null;
       renderConversation();
     }
@@ -419,7 +501,25 @@
     if (action?.dataset.action === "download-view") downloadView();
     if (action?.dataset.action === "close-modal") { state.modal = null; renderMain(); }
     if (action?.dataset.action === "clear-node") { state.selectedNode = null; renderMain(); }
-    if (action?.dataset.action === "return-explore") { closeAdvisor(); state.selectedNode = null; renderMain(); }
+    if (action?.dataset.action === "return-explore") {
+      state.impactMode = false;
+      state.explorerQuery = null;
+      state.queryDraft = null;
+      state.queryConditions = [];
+      state.selectedNode = null;
+      state.explorerMode = "explore";
+      state.navCollapsed = false;
+      state.advisorJourney = "explorer";
+      state.messages = [{ role: "advisor", ...data.responses.explorerInitial }];
+      state.promptsOpen = true;
+      state.advisorOpen = true;
+      advisor.classList.add("is-open");
+      document.body.classList.add("advisor-open");
+      updateNavigation();
+      renderMain();
+      renderAdvisorPanel();
+      updateScope();
+    }
     if (action?.dataset.action === "clear-query") { state.queryDraft = null; state.queryConditions = []; state.explorerQuery = null; renderMain(); }
     if (action?.dataset.action === "run-query") {
       state.explorerQuery = state.queryDraft || "Which workspaces use AWS provider version 5.x?";
@@ -482,6 +582,20 @@
     const node = event.target.closest("[data-node]");
     if (node) {
       openInspector(node.dataset.node);
+    }
+
+    const impactNode = event.target.closest("[data-impact-node]");
+    if (impactNode) {
+      state.selectedNode = impactNode.dataset.impactNode;
+      state.promptsOpen = true;
+      renderMain();
+      renderConversation();
+    }
+
+    const resultNode = event.target.closest("[data-result-node]");
+    if (resultNode) {
+      state.selectedNode = resultNode.dataset.resultNode;
+      renderMain();
     }
   });
 
