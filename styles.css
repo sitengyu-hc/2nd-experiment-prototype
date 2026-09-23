@@ -316,9 +316,10 @@ tr.clickable:hover { background: #f1f6ff; }
 .explorer-direct .natural-query button { min-width: 82px; font-size: 12px; }
 .explorer-direct .empty-explorer { display: none; }
 .explorer-direct .prompt-toggle { display: none; }
-.explorer-direct #prompt-menu { position: absolute; top: auto; bottom: 70px; left: 0; right: 0; }
-.explorer-direct .prompt-list { display: grid !important; justify-items: center; gap: 8px; padding: 0; }
-.explorer-direct .prompt-list button { width: auto; min-width: 180px; border-color: #1060ff; border-radius: 18px; color: #075bd8; padding: 8px 16px; text-align: center; }
+.explorer-direct #prompt-menu { position: absolute; top: auto; bottom: 70px; left: 0; right: 0; margin: 0; padding: 14px 18px; border: 0; background: #fff; }
+.explorer-direct .prompt-list { display: grid !important; gap: 6px; padding: 0; }
+.explorer-direct .prompt-list button { position: relative; width: 100%; min-width: 0; min-height: 34px; border-color: #d8dae0; border-radius: 6px; color: #075bd8; padding: 8px 34px 8px 12px; text-align: left; }
+.explorer-direct .prompt-list button::after { content: "↵"; position: absolute; right: 12px; color: #1060ff; }
 .explorer-direct .advisor-message { margin: 250px 20px 18px; border: 0; color: #747988; text-align: center; }
 .explorer-direct .references { display: none; }
 
