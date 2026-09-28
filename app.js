@@ -594,7 +594,10 @@
     if (display) { state.explorerDisplay = display.dataset.display; renderMain(); }
 
     const prompt = event.target.closest("[data-prompt]");
-    if (prompt) ask(prompt.dataset.prompt);
+    if (prompt) {
+      ask(prompt.dataset.prompt);
+      if (state.view === "explorer" && state.advisorJourney === "explorer") openAdvisor();
+    }
 
     const template = event.target.closest("[data-query-template]");
     if (template) {
