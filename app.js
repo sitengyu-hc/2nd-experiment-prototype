@@ -136,6 +136,7 @@
 
   function defaultExplorerControls() {
     return `<form id="natural-query-form" class="natural-query"><label for="natural-query-input">ENTER A NATURAL LANGUAGE QUERY</label><div><input id="natural-query-input" placeholder="Ex. production workspaces using AWS vx.x.x" value="${state.queryDraft ? escapeHtml(state.queryDraft) : ""}"><button type="submit">Search</button></div></form>
+      <div class="explorer-starter-prompts"><label class="field-label">EXPLORE YOUR INFRASTRUCTURE</label>${data.explorerPrompts.slice(0, 2).map(prompt => `<button data-prompt="${prompt}">${prompt}<span>→</span></button>`).join("")}</div>
       ${state.explorerQuery ? directReturnedNodes() : ""}`;
   }
 
@@ -451,8 +452,8 @@
       const feedback = message.feedback && hasUserQuestion ? `<div class="feedback"><span>Did this response answer your question?</span><button aria-label="Thumbs up" title="Thumbs up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v11H3V10h4Zm0 10h10.4a2 2 0 0 0 2-1.7l1.3-7A2 2 0 0 0 18.8 9H14l.7-3.4A2.2 2.2 0 0 0 12.5 3L7 10Z"/></svg></button><button aria-label="Thumbs down" title="Thumbs down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V3H3v11h4Zm0-10h10.4a2 2 0 0 1 2 1.7l1.3 7a2 2 0 0 1-1.9 2.3H14l.7 3.4a2.2 2.2 0 0 1-2.2 2.6L7 14Z"/></svg></button></div>` : "";
       return `<article class="message advisor-message">${html}${message.evidence && message.evidence.length ? `<div class="references"><span>References</span>${message.evidence.map(item => `<a href="#" data-reference>${item}</a>`).join("")}</div>` : ""}${feedback}</article>`;
     }).join("") + (state.impactMode ? impactResultsPanel() : data.explorerResults[state.explorerQuery] ? inventoryResultsPanel() : "");
-    const prompts = state.advisorJourney === "explorer" ? data.explorerPrompts : state.impactMode ? data.impactPrompts : data.suggestedPrompts;
-    promptMenu.innerHTML = `<button id="prompt-toggle" class="prompt-toggle" type="button" aria-expanded="${state.promptsOpen}">Inspect further <span>${state.promptsOpen ? "⌃" : "⌄"}</span></button><div class="prompt-list" ${state.promptsOpen ? "" : "hidden"}>${prompts.map(prompt => `<button data-prompt="${prompt}">${prompt}</button>`).join("")}</div>`;
+    const prompts = state.advisorJourney === "explorer" ? [] : state.impactMode ? data.impactPrompts : data.suggestedPrompts;
+    promptMenu.innerHTML = prompts.length ? `<button id="prompt-toggle" class="prompt-toggle" type="button" aria-expanded="${state.promptsOpen}">Inspect further <span>${state.promptsOpen ? "⌃" : "⌄"}</span></button><div class="prompt-list" ${state.promptsOpen ? "" : "hidden"}>${prompts.map(prompt => `<button data-prompt="${prompt}">${prompt}</button>`).join("")}</div>` : "";
     requestAnimationFrame(() => {
       conversation.scrollTop = state.impactMode || state.explorerQuery ? 0 : conversation.scrollHeight;
     });
