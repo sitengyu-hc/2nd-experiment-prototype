@@ -505,7 +505,7 @@
         impactMode: false,
         advisorJourney: directExplorerEntry ? "explorer" : "run"
       });
-      if (directExplorerEntry) openAdvisor(false);
+      if (directExplorerEntry) closeAdvisor();
       if (runEntry) { openAdvisor(); initializeAdvisor(); }
     }
 
@@ -660,8 +660,8 @@
     event.preventDefault();
     state.queryDraft = document.querySelector("#natural-query-input").value.trim();
     if (!state.queryDraft) return;
-    state.explorerQuery = state.queryDraft;
-    renderMain();
+    openAdvisor();
+    ask(state.queryDraft);
   });
 
   document.querySelector("#advisor-close").addEventListener("click", closeAdvisor);
