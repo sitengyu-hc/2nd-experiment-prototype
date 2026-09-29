@@ -44,9 +44,9 @@
     if (state.view !== view) state.previousView = state.view;
     state.view = view;
     if (view === "run") {
-      state.advisorOpen = true;
-      advisor.classList.add("is-open");
-      document.body.classList.add("advisor-open");
+      state.advisorOpen = false;
+      advisor.classList.remove("is-open");
+      document.body.classList.remove("advisor-open");
     } else if (view === "workspaces") {
       state.advisorOpen = false;
       advisor.classList.remove("is-open");
