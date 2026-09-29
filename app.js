@@ -213,7 +213,7 @@
   }
 
   function relationshipResultsCanvas(result) {
-    const entityPositions = [[31, 27], [31, 45], [31, 63]];
+    const entityPositions = [[31, 20], [31, 36], [31, 52], [31, 68]];
     const workspaceNames = [...new Set(result.nodes.flatMap(node => node.workspaces))];
     const workspacePositions = workspaceNames.map((_, index) => [55, 22 + index * (52 / Math.max(workspaceNames.length - 1, 1))]);
     const workspacePosition = Object.fromEntries(workspaceNames.map((name, index) => [name, workspacePositions[index]]));
@@ -284,7 +284,7 @@
           kind: "workspace",
           detail: result.nodes.filter(node => node.workspaces.includes(name)).map(node => `${node.name} ${node.detail}`).join(", ")
         }))
-      : result.nodes.map(node => ({ ...node, kind: "workspace" }));
+      : result.nodes.map(node => ({ ...node, kind: result.type }));
     const rows = [...entities, ...workspaces];
     const selected = rows.find(node => node.name === state.selectedNode);
     const visibleRows = selected ? rows.filter(node => node.name !== selected.name) : rows;
@@ -298,6 +298,7 @@
 
   function explorerSelectionCard(node, result) {
     const isWorkspace = node.kind === "workspace";
+    const isResource = node.kind === "resource";
     const details = isWorkspace
       ? [
           ["Project name", node.name.includes("prod") ? "production" : "platform"],
@@ -310,14 +311,24 @@
           ["Resource count", "34"],
           [result.type === "module" ? "Modules" : result.type === "provider" ? "Providers" : "Context", node.detail]
         ]
-      : [
-          ["Type", node.kind],
-          ["Version", node.detail],
-          ["Workspace count", String(node.workspaces.length)],
-          ["Workspaces", node.workspaces.join(", ")],
-          ["Source", node.kind === "module" ? `app.terraform.io/CoolCorp/${node.name}` : `registry.terraform.io/${node.name}`],
-          ["Last updated", "Mar 12 2025"]
-        ];
+      : isResource
+        ? [
+            ["Type", "managed resource"],
+            ["Address", `module.application.${node.name}`],
+            ["Workspace", node.name.includes("prod") ? "production-services" : "shared-platform"],
+            ["Status", node.alert ? "requires attention" : "managed"],
+            ["Details", node.detail],
+            ["Provider", "registry.terraform.io/hashicorp/aws"],
+            ["Last changed", "Mar 12 2025"]
+          ]
+        : [
+            ["Type", node.kind],
+            ["Version", node.detail],
+            ["Workspace count", String(node.workspaces.length)],
+            ["Workspaces", node.workspaces.join(", ")],
+            ["Source", node.kind === "module" ? `app.terraform.io/CoolCorp/${node.name}` : `registry.terraform.io/${node.name}`],
+            ["Last updated", "Mar 12 2025"]
+          ];
     const actions = isWorkspace ? `<div class="result-actions"><button>View resources <span>→</span></button><button>View modules <span>→</span></button><button>View providers <span>→</span></button><button class="primary-action">View blast radius <span>→</span></button></div>` : "";
     return `<div class="selected-result explorer-selection ${isWorkspace ? "workspace-result" : ""}"><button class="selected-result-title" data-action="hide-node-details"><i class="node-dot result-${node.kind}"></i><strong>${node.name}</strong><span>Hide information</span></button><dl>${details.map(([term, value]) => `<div><dt>${term}</dt><dd>${value}</dd></div>`).join("")}</dl>${actions}</div>`;
   }
@@ -414,11 +425,12 @@
   }
 
   function ask(question) {
-    const response = getResponse(question);
+    const query = state.view === "explorer" && state.advisorJourney === "explorer" ? resolveExplorerQuery(question) : question;
+    const response = getResponse(query);
     state.promptsOpen = false;
     if (state.view === "explorer" && state.advisorJourney === "explorer") {
       state.messages = [{ role: "advisor", ...response }];
-      state.explorerQuery = question;
+      state.explorerQuery = query;
       state.explorerMode = "converse";
       state.navCollapsed = true;
       state.selectedNode = null;
@@ -429,6 +441,19 @@
       state.messages.push({ role: "advisor", ...response });
       renderConversation();
     }
+  }
+
+  function resolveExplorerQuery(question) {
+    if (data.explorerResults[question]) return question;
+    const normalized = question.toLowerCase();
+    if (normalized.includes("drift")) return "Drifted workspaces";
+    if (normalized.includes("ec2") || normalized.includes("instance")) return "How many EC2 instances exist across my organization?";
+    if (normalized.includes("aws") && (normalized.includes("5") || normalized.includes("provider"))) return "Which workspaces use AWS provider version 5.x?";
+    if (normalized.includes("depend") || normalized.includes("remote state")) return "What resources depend on workspace X?";
+    if (normalized.includes("module")) return "View all modules";
+    if (normalized.includes("provider")) return "View all providers";
+    if (normalized.includes("prod") || normalized.includes("workspace")) return "Production workspaces";
+    return "Production workspaces";
   }
 
   function getResponse(question) {
@@ -442,11 +467,7 @@
         evidence: ["Explorer inventory"]
       };
     }
-    return {
-      type: "answer",
-      html: `<p>I searched Explorer for <strong>${escapeHtml(question)}</strong>.</p><p>The matching infrastructure is shown in the current result view. Select a result to inspect its details and relationships.</p>`,
-      evidence: []
-    };
+    return data.responses.explorerInitial;
   }
 
   function renderConversation() {
