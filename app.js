@@ -423,19 +423,28 @@
       state.navCollapsed = true;
       state.selectedNode = null;
       document.body.classList.add("nav-collapsed");
-      renderMain();
+      openAdvisor();
     } else {
       state.messages.push({ role: "user", text: question });
       state.messages.push({ role: "advisor", ...response });
+      renderConversation();
     }
-    renderConversation();
   }
 
   function getResponse(question) {
     // Future live-model integration belongs behind this adapter.
-    return data.responses[question] || {
+    if (data.responses[question]) return data.responses[question];
+    const result = data.explorerResults[question];
+    if (result) {
+      return {
+        type: "answer",
+        html: `<p>Explorer found <strong>${result.count} ${result.unit}</strong>.</p><p>${escapeHtml(result.summary)}. Select a result to inspect its details and relationships.</p>`,
+        evidence: ["Explorer inventory"]
+      };
+    }
+    return {
       type: "answer",
-      html: `<p>This prototype currently supports the suggested research paths. Try one of the prompts below.</p>`,
+      html: `<p>I searched Explorer for <strong>${escapeHtml(question)}</strong>.</p><p>The matching infrastructure is shown in the current result view. Select a result to inspect its details and relationships.</p>`,
       evidence: []
     };
   }
@@ -596,10 +605,7 @@
     if (display) { state.explorerDisplay = display.dataset.display; renderMain(); }
 
     const prompt = event.target.closest("[data-prompt]");
-    if (prompt) {
-      ask(prompt.dataset.prompt);
-      if (state.view === "explorer" && state.advisorJourney === "explorer") openAdvisor();
-    }
+    if (prompt) ask(prompt.dataset.prompt);
 
     const template = event.target.closest("[data-query-template]");
     if (template) {
@@ -666,7 +672,6 @@
     event.preventDefault();
     state.queryDraft = document.querySelector("#natural-query-input").value.trim();
     if (!state.queryDraft) return;
-    openAdvisor();
     ask(state.queryDraft);
   });
 
