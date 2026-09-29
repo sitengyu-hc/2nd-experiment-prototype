@@ -2,6 +2,7 @@
   "use strict";
 
   const data = window.PROTOTYPE_DATA;
+  // Advisor opens only for explicit investigation flows, not starter Explorer entry.
   const state = {
     view: "workspaces",
     previousView: null,
