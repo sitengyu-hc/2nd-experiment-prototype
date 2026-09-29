@@ -2,6 +2,7 @@
   "use strict";
 
   const data = window.PROTOTYPE_DATA;
+  // Keep the starter Explorer flow free of an open Advisor panel.
   // Advisor opens only for explicit investigation flows, not starter Explorer entry.
   const state = {
     view: "workspaces",
