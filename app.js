@@ -561,9 +561,9 @@
       state.advisorJourney = "explorer";
       state.messages = [{ role: "advisor", ...data.responses.explorerInitial }];
       state.promptsOpen = true;
-      state.advisorOpen = true;
-      advisor.classList.add("is-open");
-      document.body.classList.add("advisor-open");
+      state.advisorOpen = false;
+      advisor.classList.remove("is-open");
+      document.body.classList.remove("advisor-open");
       updateNavigation();
       renderMain();
       renderAdvisorPanel();
