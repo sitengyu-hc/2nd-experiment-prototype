@@ -418,11 +418,12 @@
   }
 
   function ask(question) {
-    const response = getResponse(question);
+    const query = state.view === "explorer" && state.advisorJourney === "explorer" ? resolveExplorerQuery(question) : question;
+    const response = getResponse(query);
     state.promptsOpen = false;
     if (state.view === "explorer" && state.advisorJourney === "explorer") {
       state.messages = [{ role: "advisor", ...response }];
-      state.explorerQuery = question;
+      state.explorerQuery = query;
       state.explorerMode = "converse";
       state.navCollapsed = true;
       state.selectedNode = null;
@@ -433,6 +434,15 @@
       state.messages.push({ role: "advisor", ...response });
     }
     renderConversation();
+  }
+
+  function resolveExplorerQuery(question) {
+    if (data.explorerResults[question]) return question;
+    const normalized = question.toLowerCase();
+    if (normalized.includes("drift")) return "Drifted workspaces";
+    if (normalized.includes("module")) return "View all modules";
+    if (normalized.includes("provider")) return "View all providers";
+    return question;
   }
 
   function getResponse(question) {
