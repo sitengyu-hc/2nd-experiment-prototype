@@ -2,8 +2,8 @@
   "use strict";
 
   const data = window.PROTOTYPE_DATA;
-  // Keep the starter Explorer flow free of an open Advisor panel.
-  // Advisor opens only for explicit investigation flows, not starter Explorer entry.
+  // Keep the starter Explorer flow free of an open Albus panel.
+  // Albus opens only for explicit investigation flows, not starter Explorer entry.
   const state = {
     view: "workspaces",
     previousView: null,
@@ -33,6 +33,10 @@
   const advisorTitle = document.querySelector("#advisor-title");
   const advisorComposer = document.querySelector("#advisor-composer");
 
+  function defaultPromptsOpen(journey = state.advisorJourney) {
+    return journey === "run";
+  }
+
   const icon = (name) => {
     const paths = {
       database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
@@ -58,7 +62,7 @@
     if (options.advisorJourney && options.advisorJourney !== state.advisorJourney) {
       state.advisorJourney = options.advisorJourney;
       state.messages = [];
-      state.promptsOpen = true;
+      state.promptsOpen = defaultPromptsOpen(options.advisorJourney);
       initializeAdvisor();
     }
     renderMain();
@@ -213,7 +217,7 @@
   }
 
   function relationshipResultsCanvas(result) {
-    const entityPositions = [[31, 20], [31, 36], [31, 52], [31, 68]];
+    const entityPositions = [[31, 27], [31, 45], [31, 63]];
     const workspaceNames = [...new Set(result.nodes.flatMap(node => node.workspaces))];
     const workspacePositions = workspaceNames.map((_, index) => [55, 22 + index * (52 / Math.max(workspaceNames.length - 1, 1))]);
     const workspacePosition = Object.fromEntries(workspaceNames.map((name, index) => [name, workspacePositions[index]]));
@@ -284,7 +288,7 @@
           kind: "workspace",
           detail: result.nodes.filter(node => node.workspaces.includes(name)).map(node => `${node.name} ${node.detail}`).join(", ")
         }))
-      : result.nodes.map(node => ({ ...node, kind: result.type }));
+      : result.nodes.map(node => ({ ...node, kind: "workspace" }));
     const rows = [...entities, ...workspaces];
     const selected = rows.find(node => node.name === state.selectedNode);
     const visibleRows = selected ? rows.filter(node => node.name !== selected.name) : rows;
@@ -298,7 +302,6 @@
 
   function explorerSelectionCard(node, result) {
     const isWorkspace = node.kind === "workspace";
-    const isResource = node.kind === "resource";
     const details = isWorkspace
       ? [
           ["Project name", node.name.includes("prod") ? "production" : "platform"],
@@ -311,24 +314,14 @@
           ["Resource count", "34"],
           [result.type === "module" ? "Modules" : result.type === "provider" ? "Providers" : "Context", node.detail]
         ]
-      : isResource
-        ? [
-            ["Type", "managed resource"],
-            ["Address", `module.application.${node.name}`],
-            ["Workspace", node.name.includes("prod") ? "production-services" : "shared-platform"],
-            ["Status", node.alert ? "requires attention" : "managed"],
-            ["Details", node.detail],
-            ["Provider", "registry.terraform.io/hashicorp/aws"],
-            ["Last changed", "Mar 12 2025"]
-          ]
-        : [
-            ["Type", node.kind],
-            ["Version", node.detail],
-            ["Workspace count", String(node.workspaces.length)],
-            ["Workspaces", node.workspaces.join(", ")],
-            ["Source", node.kind === "module" ? `app.terraform.io/CoolCorp/${node.name}` : `registry.terraform.io/${node.name}`],
-            ["Last updated", "Mar 12 2025"]
-          ];
+      : [
+          ["Type", node.kind],
+          ["Version", node.detail],
+          ["Workspace count", String(node.workspaces.length)],
+          ["Workspaces", node.workspaces.join(", ")],
+          ["Source", node.kind === "module" ? `app.terraform.io/CoolCorp/${node.name}` : `registry.terraform.io/${node.name}`],
+          ["Last updated", "Mar 12 2025"]
+        ];
     const actions = isWorkspace ? `<div class="result-actions"><button>View resources <span>→</span></button><button>View modules <span>→</span></button><button>View providers <span>→</span></button><button class="primary-action">View blast radius <span>→</span></button></div>` : "";
     return `<div class="selected-result explorer-selection ${isWorkspace ? "workspace-result" : ""}"><button class="selected-result-title" data-action="hide-node-details"><i class="node-dot result-${node.kind}"></i><strong>${node.name}</strong><span>Hide information</span></button><dl>${details.map(([term, value]) => `<div><dt>${term}</dt><dd>${value}</dd></div>`).join("")}</dl>${actions}</div>`;
   }
@@ -425,49 +418,30 @@
   }
 
   function ask(question) {
-    const query = state.view === "explorer" && state.advisorJourney === "explorer" ? resolveExplorerQuery(question) : question;
-    const response = getResponse(query);
+    const response = getResponse(question);
     state.promptsOpen = false;
     if (state.view === "explorer" && state.advisorJourney === "explorer") {
       state.messages = [{ role: "advisor", ...response }];
-      state.explorerQuery = query;
+      state.explorerQuery = question;
       state.explorerMode = "converse";
       state.navCollapsed = true;
       state.selectedNode = null;
       document.body.classList.add("nav-collapsed");
-      openAdvisor();
+      renderMain();
     } else {
       state.messages.push({ role: "user", text: question });
       state.messages.push({ role: "advisor", ...response });
-      renderConversation();
     }
-  }
-
-  function resolveExplorerQuery(question) {
-    if (data.explorerResults[question]) return question;
-    const normalized = question.toLowerCase();
-    if (normalized.includes("drift")) return "Drifted workspaces";
-    if (normalized.includes("ec2") || normalized.includes("instance")) return "How many EC2 instances exist across my organization?";
-    if (normalized.includes("aws") && (normalized.includes("5") || normalized.includes("provider"))) return "Which workspaces use AWS provider version 5.x?";
-    if (normalized.includes("depend") || normalized.includes("remote state")) return "What resources depend on workspace X?";
-    if (normalized.includes("module")) return "View all modules";
-    if (normalized.includes("provider")) return "View all providers";
-    if (normalized.includes("prod") || normalized.includes("workspace")) return "Production workspaces";
-    return "Production workspaces";
+    renderConversation();
   }
 
   function getResponse(question) {
     // Future live-model integration belongs behind this adapter.
-    if (data.responses[question]) return data.responses[question];
-    const result = data.explorerResults[question];
-    if (result) {
-      return {
-        type: "answer",
-        html: `<p>Explorer found <strong>${result.count} ${result.unit}</strong>.</p><p>${escapeHtml(result.summary)}. Select a result to inspect its details and relationships.</p>`,
-        evidence: ["Explorer inventory"]
-      };
-    }
-    return data.responses.explorerInitial;
+    return data.responses[question] || {
+      type: "answer",
+      html: `<p>This prototype currently supports the suggested research paths. Try one of the prompts below.</p>`,
+      evidence: []
+    };
   }
 
   function renderConversation() {
@@ -484,8 +458,9 @@
       const feedback = message.feedback && hasUserQuestion ? `<div class="feedback"><span>Did this response answer your question?</span><button aria-label="Thumbs up" title="Thumbs up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v11H3V10h4Zm0 10h10.4a2 2 0 0 0 2-1.7l1.3-7A2 2 0 0 0 18.8 9H14l.7-3.4A2.2 2.2 0 0 0 12.5 3L7 10Z"/></svg></button><button aria-label="Thumbs down" title="Thumbs down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V3H3v11h4Zm0-10h10.4a2 2 0 0 1 2 1.7l1.3 7a2 2 0 0 1-1.9 2.3H14l.7 3.4a2.2 2.2 0 0 1-2.2 2.6L7 14Z"/></svg></button></div>` : "";
       return `<article class="message advisor-message">${html}${message.evidence && message.evidence.length ? `<div class="references"><span>References</span>${message.evidence.map(item => `<a href="#" data-reference>${item}</a>`).join("")}</div>` : ""}${feedback}</article>`;
     }).join("") + (state.impactMode ? impactResultsPanel() : data.explorerResults[state.explorerQuery] ? inventoryResultsPanel() : "");
-    const prompts = state.advisorJourney === "explorer" ? [] : state.impactMode ? data.impactPrompts : data.suggestedPrompts;
-    promptMenu.innerHTML = prompts.length ? `<button id="prompt-toggle" class="prompt-toggle" type="button" aria-expanded="${state.promptsOpen}">Inspect further <span>${state.promptsOpen ? "⌃" : "⌄"}</span></button><div class="prompt-list" ${state.promptsOpen ? "" : "hidden"}>${prompts.map(prompt => `<button data-prompt="${prompt}">${prompt}</button>`).join("")}</div>` : "";
+    const prompts = state.advisorJourney === "explorer" ? data.explorerPrompts : state.impactMode ? data.impactPrompts : data.suggestedPrompts;
+    const promptLabel = state.advisorJourney === "explorer" ? "Suggested queries" : "Inspect further";
+    promptMenu.innerHTML = prompts.length ? `<button id="prompt-toggle" class="prompt-toggle" type="button" aria-expanded="${state.promptsOpen}">${promptLabel} <span>${state.promptsOpen ? "⌃" : "⌄"}</span></button><div class="prompt-list" ${state.promptsOpen ? "" : "hidden"}>${prompts.map(prompt => `<button data-prompt="${prompt}">${prompt}</button>`).join("")}</div>` : "";
     requestAnimationFrame(() => {
       conversation.scrollTop = state.impactMode || state.explorerQuery ? 0 : conversation.scrollHeight;
     });
@@ -532,7 +507,7 @@
         state.explorerMode = "explore";
         state.navCollapsed = false;
         state.messages = [];
-        state.promptsOpen = true;
+        state.promptsOpen = defaultPromptsOpen("explorer");
       }
       setView(nav.dataset.nav, {
         impactMode: false,
@@ -551,7 +526,7 @@
       state.queryDraft = null;
       state.selectedNode = null;
       state.explorerMode = "explore";
-      state.promptsOpen = true;
+      state.promptsOpen = defaultPromptsOpen();
       initializeAdvisor();
       renderMain();
       renderAdvisorPanel();
@@ -592,7 +567,7 @@
       state.navCollapsed = false;
       state.advisorJourney = "explorer";
       state.messages = [{ role: "advisor", ...data.responses.explorerInitial }];
-      state.promptsOpen = true;
+      state.promptsOpen = defaultPromptsOpen("explorer");
       state.advisorOpen = false;
       advisor.classList.remove("is-open");
       document.body.classList.remove("advisor-open");
@@ -626,7 +601,10 @@
     if (display) { state.explorerDisplay = display.dataset.display; renderMain(); }
 
     const prompt = event.target.closest("[data-prompt]");
-    if (prompt) ask(prompt.dataset.prompt);
+    if (prompt) {
+      ask(prompt.dataset.prompt);
+      if (state.view === "explorer" && state.advisorJourney === "explorer") openAdvisor();
+    }
 
     const template = event.target.closest("[data-query-template]");
     if (template) {
@@ -693,6 +671,7 @@
     event.preventDefault();
     state.queryDraft = document.querySelector("#natural-query-input").value.trim();
     if (!state.queryDraft) return;
+    openAdvisor();
     ask(state.queryDraft);
   });
 

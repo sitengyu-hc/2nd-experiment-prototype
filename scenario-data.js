@@ -52,8 +52,7 @@ window.PROTOTYPE_DATA = {
       nodes: [
         { name: "terraform-aws-rds", detail: "v5.1.0", workspaces: ["payments-prod-eu", "payments-prod-us", "payments-staging"] },
         { name: "vpc-baseline", detail: "v3.4.2", workspaces: ["networking-prod", "platform-staging"] },
-        { name: "eks-cluster", detail: "v19.5.1", workspaces: ["analytics-prod", "ml-pipeline-prod"] },
-        { name: "s3-data-lake", detail: "v4.2.0", workspaces: ["analytics-prod", "data-warehouse-dev"] }
+        { name: "eks-cluster", detail: "v19.5.1", workspaces: ["analytics-prod", "ml-pipeline-prod"] }
       ]
     },
     "View all providers": {
@@ -64,8 +63,7 @@ window.PROTOTYPE_DATA = {
       nodes: [
         { name: "hashicorp/aws", detail: "v5.82.2", workspaces: ["payments-prod-eu", "payments-prod-us", "networking-prod"] },
         { name: "hashicorp/kubernetes", detail: "v2.35.1", workspaces: ["analytics-prod", "ml-pipeline-prod"] },
-        { name: "hashicorp/vault", detail: "v4.5.0", workspaces: ["platform-staging", "security-prod"] },
-        { name: "hashicorp/random", detail: "v3.6.3", workspaces: ["payments-staging", "infra-baseline-qa"] }
+        { name: "hashicorp/vault", detail: "v4.5.0", workspaces: ["platform-staging", "security-prod"] }
       ]
     },
     "Drifted workspaces": {
@@ -82,62 +80,6 @@ window.PROTOTYPE_DATA = {
         { name: "platform-staging", detail: "Drift detected 2h ago" },
         { name: "data-warehouse-dev", detail: "Drift detected yesterday" },
         { name: "infra-baseline-qa", detail: "Drift detected yesterday" }
-      ]
-    },
-    "How many EC2 instances exist across my organization?": {
-      count: 47,
-      unit: "EC2 instances",
-      type: "resource",
-      summary: "47 EC2 instances across 14 workspaces",
-      nodes: [
-        { name: "prod-web-01", detail: "m6i.large · us-east-1" },
-        { name: "prod-api-02", detail: "m6i.xlarge · us-east-1" },
-        { name: "analytics-worker-01", detail: "r6i.2xlarge · us-west-2" },
-        { name: "staging-web-01", detail: "t3.large · us-east-1" },
-        { name: "qa-runner-03", detail: "c6i.large · us-east-2" },
-        { name: "bastion-prod", detail: "t3.small · eu-west-1" }
-      ]
-    },
-    "Which workspaces use AWS provider version 5.x?": {
-      count: 18,
-      unit: "workspaces",
-      type: "workspace",
-      summary: "18 workspaces use AWS provider 5.x",
-      nodes: [
-        { name: "payments-prod-eu", detail: "AWS v5.82.2 · applied" },
-        { name: "payments-prod-us", detail: "AWS v5.82.2 · planned" },
-        { name: "networking-prod", detail: "AWS v5.79.0 · applied" },
-        { name: "analytics-prod", detail: "AWS v5.76.0 · applied" },
-        { name: "platform-staging", detail: "AWS v5.68.0 · planned" },
-        { name: "infra-baseline-qa", detail: "AWS v5.61.0 · applied" }
-      ]
-    },
-    "What resources depend on workspace X?": {
-      count: 7,
-      unit: "resources",
-      type: "resource",
-      summary: "7 resources consume remote-state outputs from workspace X",
-      nodes: [
-        { name: "prod-api", detail: "Consumes subnet_ids" },
-        { name: "payments-db", detail: "Consumes security_group_ids" },
-        { name: "catalog-service", detail: "Consumes vpc_id" },
-        { name: "analytics-worker", detail: "Consumes private_route_table_ids" },
-        { name: "internal-alb", detail: "Consumes private_subnet_ids" },
-        { name: "bastion-host", detail: "Consumes public_subnet_ids" }
-      ]
-    },
-    "Production workspaces": {
-      count: 6,
-      unit: "workspaces",
-      type: "workspace",
-      summary: "6 production workspaces across three projects",
-      nodes: [
-        { name: "payments-prod-eu", detail: "Applied · 95 resources" },
-        { name: "payments-prod-us", detail: "Planned · 148 resources" },
-        { name: "analytics-prod", detail: "Applied · 34 resources" },
-        { name: "networking-prod", detail: "Applied · 76 resources" },
-        { name: "security-prod", detail: "Applied · 41 resources" },
-        { name: "ml-pipeline-prod", detail: "Applied · 63 resources" }
       ]
     }
   },
