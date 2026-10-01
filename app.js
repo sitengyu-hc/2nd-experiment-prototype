@@ -440,14 +440,26 @@
     if (data.explorerResults[question]) return question;
     const normalized = question.toLowerCase();
     if (normalized.includes("drift")) return "Drifted workspaces";
+    if (normalized.includes("ec2") || normalized.includes("instance")) return "How many EC2 instances exist across my organization?";
+    if (normalized.includes("aws") && (normalized.includes("5") || normalized.includes("provider"))) return "Which workspaces use AWS provider version 5.x?";
+    if (normalized.includes("depend") || normalized.includes("remote state")) return "What resources depend on workspace X?";
     if (normalized.includes("module")) return "View all modules";
     if (normalized.includes("provider")) return "View all providers";
-    return question;
+    return "Production workspaces";
   }
 
   function getResponse(question) {
     // Future live-model integration belongs behind this adapter.
-    return data.responses[question] || {
+    if (data.responses[question]) return data.responses[question];
+    const result = data.explorerResults[question];
+    if (result) {
+      return {
+        type: "answer",
+        html: `<p>Explorer found <strong>${result.count} ${result.unit}</strong>.</p><p>${escapeHtml(result.summary)}. Select a result to inspect its details and relationships.</p>`,
+        evidence: ["Explorer inventory"]
+      };
+    }
+    return {
       type: "answer",
       html: `<p>This prototype currently supports the suggested research paths. Try one of the prompts below.</p>`,
       evidence: []

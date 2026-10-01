@@ -41,3 +41,23 @@ test("typed natural language returns the same conversation node list as a prepop
   expect(typedNodes).not.toHaveLength(0);
   expect(typedNodes).toEqual(prepopulatedNodes);
 });
+
+test("the Explorer textbox example returns an Albus node list", async ({ page }) => {
+  await openExplorer(page);
+  await page.locator("#natural-query-input").fill("production workspaces using AWS v5.x");
+  await page.locator("#natural-query-form").press("Enter");
+
+  await expect(page.locator("#conversation")).toContainText("18 workspaces");
+  await expect(page.locator("#conversation .returned-heading")).toContainText("RETURNED NODES");
+  await expect(page.locator("#conversation .returned-nodes [data-result-node]")).toHaveCount(6);
+  await expect(page.locator("#conversation")).toContainText("payments-prod-eu");
+});
+
+test("an unmatched natural-language query still returns scoped Explorer nodes", async ({ page }) => {
+  await openExplorer(page);
+  await page.locator("#natural-query-input").fill("show infrastructure I should review");
+  await page.locator("#natural-query-form").press("Enter");
+
+  await expect(page.locator("#conversation")).toContainText("6 production workspaces");
+  await expect(page.locator("#conversation .returned-nodes [data-result-node]")).toHaveCount(6);
+});
