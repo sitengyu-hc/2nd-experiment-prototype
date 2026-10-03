@@ -1,4 +1,35 @@
+(function () {
+// Scripted, curated data. Models the RDS v4.0.0 -> v5.1.0 force-replacement fixture.
+// Albus tiers (see ../albus-tiers-demo-plan.md):
+//   tier 1 = translate a question into an Explorer query (table + chips, one-line receipt)
+//   tier 2 = join sources (Albus-derived view joining Explorer with registry / run history)
+//   tier 3 = reason over the results (chat answer referencing table rows)
+const RDS_CONSUMERS = "Workspaces using terraform-aws-rds v5.1.0";
+const RDS_VERSIONS = "terraform-aws-rds — all published versions";
+
+// Insight text links rows in the table; clicking highlights the row.
+const row = (key, label = key) => `<button class="row-link" type="button" data-row-ref="${key}">${label}</button>`;
+
+const versionSources = [
+  { label: "Private registry", detail: "CoolCorp/terraform-aws-rds · 6 published versions", freshness: "live" },
+  { label: "Explorer usage", detail: "module versions in workspace state", freshness: "last indexed 6h ago" },
+  { label: "Run history", detail: "configuration versions per workspace, for “Last used”", freshness: "all retained runs" }
+];
+const versionGaps = [
+  "Callers that source the module from Git instead of the registry (no registry version to match).",
+  "Workspaces outside the CoolCorp organization."
+];
+const versionNextPrompts = [
+  "Should we deprecate v5.1.0?",
+  "Which RDS versions are deprecated but still in use?",
+  "Show blast radius for v5.1.0"
+];
+// One-line basis shown at the top of tier 2 answers: which sources Albus combined.
+const registryBasis = "I compared your private registry with Explorer usage.";
+
 window.PROTOTYPE_DATA = {
+  rdsConsumersQuery: RDS_CONSUMERS,
+  rdsVersionsQuery: RDS_VERSIONS,
   workspace: {
     name: "my-workspace",
     id: "ws-1HkX32P8UKEJ3Lmo",
@@ -33,16 +64,199 @@ window.PROTOTYPE_DATA = {
     "What other workspaces are using RDS module v5.1.0?",
     "Who introduced the lifecycle guard?"
   ],
+  // Albus panel prompts once the run investigation has moved into Explorer (tier 2 / tier 3).
   impactPrompts: [
-    "What modules are no longer being used?",
-    "When was the last time this module was used?",
-    "Save this view"
+    "Which RDS module versions are no longer in use?",
+    "Should we deprecate v5.1.0?",
+    "Show blast radius for v5.1.0",
+    "Save as view"
   ],
+  // Albus panel prompts for direct Explorer entry.
   explorerPrompts: [
     "View all modules",
-    "View all providers",
-    "Drifted workspaces"
+    "Drifted workspaces",
+    "Which RDS module versions are no longer in use?"
   ],
+  // Starting points shown under the "Ask Albus or filter…" bar. `albus: true` = answered by Albus joining other sources.
+  explorerStarters: [
+    { text: "Drifted workspaces" },
+    { text: "View all modules" },
+    { text: "View all providers" },
+    { text: "Which RDS module versions are no longer in use?", albus: true }
+  ],
+  // Explorer query model, mirroring HCP Terraform Explorer (atlas app/lib/workspace-explorer.js):
+  // pick an object type, then WHERE <column> <operator> <value> AND ... Operators depend on the column type.
+  explorerSchema: {
+    types: [
+      { key: "workspaces", label: "Workspaces" },
+      { key: "modules", label: "Modules" },
+      { key: "providers", label: "Providers" },
+      { key: "resources", label: "Resources" },
+      { key: "tf_versions", label: "Terraform versions" }
+    ],
+    columns: {
+      workspaces: [
+        { key: "workspaceName", label: "Name", type: "string" },
+        { key: "projectName", label: "Project name", type: "string" },
+        { key: "currentRunStatus", label: "Run status", type: "string" },
+        { key: "currentRunAppliedAt", label: "Current run applied", type: "date" },
+        { key: "vcsRepoIdentifier", label: "VCS repo", type: "string" },
+        { key: "moduleCount", label: "Module count", type: "number" },
+        { key: "modules", label: "Modules", type: "string" },
+        { key: "providerCount", label: "Provider count", type: "number" },
+        { key: "providers", label: "Providers", type: "string" },
+        { key: "workspaceTerraformVersion", label: "Terraform version", type: "string" },
+        { key: "drifted", label: "Drifted", type: "boolean" },
+        { key: "allChecksSucceeded", label: "Health checks succeeded", type: "boolean" },
+        { key: "checksFailed", label: "Health checks failed", type: "number" },
+        { key: "resourcesDrifted", label: "Resources drifted", type: "number" },
+        { key: "resourceCount", label: "Resource count", type: "number" },
+        { key: "tags", label: "Tags", type: "string" },
+        { key: "workspaceUpdatedAt", label: "Updated", type: "date" }
+      ],
+      modules: [
+        { key: "name", label: "Name", type: "string" },
+        { key: "version", label: "Version", type: "string" },
+        { key: "source", label: "Source", type: "string" },
+        { key: "workspaceCount", label: "Workspace count", type: "number" },
+        { key: "workspaces", label: "Workspaces", type: "string" }
+      ],
+      providers: [
+        { key: "name", label: "Name", type: "string" },
+        { key: "version", label: "Version", type: "string" },
+        { key: "source", label: "Source", type: "string" },
+        { key: "workspaceCount", label: "Workspace count", type: "number" },
+        { key: "workspaces", label: "Workspaces", type: "string" }
+      ],
+      resources: [
+        { key: "name", label: "Name", type: "string" },
+        { key: "address", label: "Address", type: "string" },
+        { key: "workspaceName", label: "Workspace", type: "string" },
+        { key: "projectName", label: "Project", type: "string" },
+        { key: "moduleName", label: "Module name", type: "string" },
+        { key: "providerType", label: "Type", type: "string" },
+        { key: "providerName", label: "Provider", type: "string" }
+      ],
+      tf_versions: [
+        { key: "version", label: "Version", type: "string" },
+        { key: "workspaceCount", label: "Workspace count", type: "number" },
+        { key: "workspaces", label: "Workspaces", type: "string" }
+      ]
+    },
+    operators: {
+      string: [
+        { key: "is", label: "is" },
+        { key: "is-not", label: "is not" },
+        { key: "contains", label: "contains" },
+        { key: "does-not-contain", label: "does not contain" },
+        { key: "is-empty", label: "is empty" },
+        { key: "is-not-empty", label: "is not empty" }
+      ],
+      number: [
+        { key: "is", label: "=", badge: "is" },
+        { key: "is-not", label: "≠", badge: "is not" },
+        { key: "gt", label: ">", badge: "is greater than" },
+        { key: "lt", label: "<", badge: "is less than" },
+        { key: "gteq", label: ">=", badge: "is greater than or equal to" },
+        { key: "lteq", label: "<=", badge: "is less than or equal to" },
+        { key: "is-empty", label: "is empty" },
+        { key: "is-not-empty", label: "is not empty" }
+      ],
+      boolean: [
+        { key: "is", label: "is" },
+        { key: "is-empty", label: "is empty" },
+        { key: "is-not-empty", label: "is not empty" }
+      ],
+      date: [
+        { key: "is-before", label: "before" },
+        { key: "is-after", label: "after" }
+      ]
+    }
+  },
+  // The Explorer query behind each scripted result: object type + WHERE conditions (editable in "Edit conditions").
+  // `albus` = a scope Albus adds on top of Explorer (shown as a ✦ chip, not editable in the builder).
+  queryDefs: {
+    [RDS_CONSUMERS]: {
+      type: "modules",
+      conditions: [
+        { column: "name", operator: "is", value: "terraform-aws-rds" },
+        { column: "version", operator: "is", value: "5.1.0" }
+      ]
+    },
+    [RDS_VERSIONS]: {
+      type: "modules",
+      conditions: [{ column: "name", operator: "is", value: "terraform-aws-rds" }],
+      albus: "all published versions (private registry)"
+    },
+    "View all modules": { type: "modules", conditions: [] },
+    "View all providers": { type: "providers", conditions: [] },
+    "Drifted workspaces": {
+      type: "workspaces",
+      conditions: [{ column: "drifted", operator: "is", value: "true" }]
+    },
+    "How many EC2 instances exist across my organization?": {
+      type: "resources",
+      conditions: [{ column: "providerType", operator: "is", value: "aws_instance" }]
+    },
+    "Which workspaces use AWS provider version 5.x?": {
+      type: "workspaces",
+      conditions: [{ column: "providers", operator: "contains", value: "hashicorp/aws 5." }]
+    },
+    "What resources depend on workspace X?": {
+      type: "resources",
+      conditions: [{ column: "address", operator: "contains", value: "terraform_remote_state.workspace_x" }]
+    },
+    "Production workspaces": {
+      type: "workspaces",
+      conditions: [{ column: "tags", operator: "contains", value: "production" }]
+    }
+  },
+  // Typing on a results page narrows the current query: each refinement adds one condition and
+  // filters the scripted rows. `scope` says which results it applies to; `keep` decides which rows stay.
+  refinements: [
+    {
+      id: "production",
+      match: /\b(prod|production)\b/,
+      scope: "workspace-results",
+      condition: { column: "tags", operator: "contains", value: "production" },
+      keep: row => /prod/.test(row.name)
+    },
+    {
+      id: "staging",
+      match: /\bstag(e|ing)\b/,
+      scope: "workspace-results",
+      condition: { column: "tags", operator: "contains", value: "staging" },
+      keep: row => /staging/.test(row.name)
+    },
+    {
+      id: "consumers-production",
+      match: /\b(prod|production)\b/,
+      scope: "rds-consumers",
+      condition: { column: "workspaces", operator: "contains", value: "production" },
+      keep: row => row.environment === "production"
+    }
+  ],
+  // Albus-derived view (tier 2). Explorer alone only knows versions some workspace uses
+  // (visibility-module-version-v2, no registry join). The ✦ columns are computed by Albus.
+  // Workspace counts match affectedWorkspaces: v5.1.0 = the 5 consumers (2 production).
+  // my-workspace's v5.1.0 run errored before apply, so its state is still on v4.0.0.
+  rdsVersions: {
+    module: "terraform-aws-rds",
+    provenance: {
+      workspaces: "Explorer usage · module versions in workspace state · last indexed 6h ago",
+      registryStatus: "Albus-computed · Private registry API (CoolCorp/terraform-aws-rds) · live",
+      lastUsed: "Albus-computed · run history (latest configuration version referencing this module version)",
+      note: "Albus-computed · summary of the columns above plus run-guDS9dmc3dn diagnostics"
+    },
+    rows: [
+      { version: "v3.2.0", workspaces: 2, detail: "legacy-data, sandbox-testing", registryStatus: "Deprecated", status: "deprecated", lastUsed: "3 days ago", note: "Deprecated but still in use" },
+      { version: "v4.0.0", workspaces: 14, detail: "incl. my-workspace (current state)", registryStatus: "Published", status: "published", lastUsed: "today", note: "Safe rollback target" },
+      { version: "v4.1.0", workspaces: 0, detail: "", registryStatus: "Published", status: "published", lastUsed: "Feb 2026", note: "No longer in use" },
+      { version: "v4.2.0", workspaces: 0, detail: "", registryStatus: "Published", status: "published", lastUsed: "Mar 2026", note: "No longer in use" },
+      { version: "v5.0.0", workspaces: 0, detail: "", registryStatus: "Published", status: "published", lastUsed: "never", note: "Never adopted" },
+      { version: "v5.1.0", workspaces: 5, detail: "2 production", registryStatus: "Published · breaking db_name rename", status: "breaking", lastUsed: "today", note: "The failing version — view blast radius", graph: true }
+    ]
+  },
   explorerResults: {
     "View all modules": {
       count: 24,
@@ -169,24 +383,112 @@ window.PROTOTYPE_DATA = {
       html: `<p>The guard first appears in the shared RDS module at <strong>v5.1.0</strong>. This run was triggered by <strong>devSecOpsGuru</strong> after the caller's module source changed from v4.0.0 to v5.1.0.</p><p>The available run data identifies the configuration change, but not the author of the module's internal commit. Open the module version in the registry or its VCS source to confirm ownership.</p>`,
       evidence: ["Run configuration version", "Private registry module metadata"]
     },
-    "Save this view": {
+    // Structured answers: {tier, query, basis?, interpretation, sources, gaps, insight, rowRefs, nextPrompts, actions}.
+    // The chat never repeats the table; it explains, cites sources, and links rows.
+    "Save as view": {
+      tier: "action",
+      action: "save-view",
       type: "answer",
-      html: `<p>Save the current Explorer view and its RDS module version filter so your team can return to this investigation.</p><button class="inline-action" data-action="save-view">Save view</button>`,
+      html: `<p>Opening <strong>Save view</strong> for the current results. Albus-derived views keep their ✦ badge so others know which columns Albus computed.</p>`,
       evidence: []
     },
-    "What modules are no longer being used?": {
-      type: "answer",
-      html: `<p>This view is scoped to workspaces using RDS module v5.1.0, so it cannot identify unused modules. Start a new Explorer query across the module inventory to find modules with no current workspace consumers.</p>`,
-      evidence: ["Current Explorer query"]
+    "Which RDS module versions are no longer in use?": {
+      tier: 2,
+      query: RDS_VERSIONS,
+      feedback: true,
+      basis: registryBasis,
+      interpretation: "I read this as <strong>terraform-aws-rds versions in your private registry with 0 workspace consumers</strong> in Explorer.",
+      sources: versionSources,
+      gaps: versionGaps,
+      insight: `<p><strong>3 of 6 versions are unused:</strong> ${row("v4.1.0")}, ${row("v4.2.0")}, and ${row("v5.0.0")} (never adopted). ${row("v3.2.0")} is deprecated but still used by 2 workspaces. ${row("v5.1.0")} was adopted by 5 (2 production) and contains the <code>db_name</code> rename.</p>`,
+      rowRefs: ["v4.1.0", "v4.2.0", "v5.0.0"],
+      nextPrompts: versionNextPrompts,
+      actions: ["save-view", "download-view"]
     },
-    "When was the last time this module was used?": {
-      type: "answer",
-      html: `<p>The most recent configuration using RDS module v5.1.0 ran today in <strong>my-workspace</strong>. Select a consumer to review its current run and last-updated details.</p>`,
-      evidence: ["Workspace configuration versions", "Current runs"]
+    // Previously answered (incorrectly) that a broader Explorer query would find unused modules.
+    // Explorer cannot see versions no workspace uses; Albus scopes to the module in context and joins the registry.
+    "What modules are no longer being used?": {
+      tier: 2,
+      query: RDS_VERSIONS,
+      feedback: true,
+      basis: registryBasis,
+      interpretation: "I scoped this to <strong>terraform-aws-rds</strong>, the module you're investigating, and read it as published versions with 0 workspace consumers. Ask about “all modules” to widen it.",
+      sources: versionSources,
+      gaps: versionGaps,
+      insight: `<p><strong>3 of 6 versions are unused:</strong> ${row("v4.1.0")}, ${row("v4.2.0")}, and ${row("v5.0.0")}. ${row("v3.2.0")} is deprecated but still used by 2 workspaces.</p>`,
+      rowRefs: ["v4.1.0", "v4.2.0", "v5.0.0"],
+      nextPrompts: versionNextPrompts,
+      actions: ["save-view", "download-view"]
+    },
+    "Which RDS versions are deprecated but still in use?": {
+      tier: 2,
+      query: RDS_VERSIONS,
+      feedback: true,
+      basis: "I compared deprecation status in your private registry with Explorer usage.",
+      interpretation: "I read this as <strong>terraform-aws-rds versions marked deprecated in the registry that at least one workspace still uses</strong>.",
+      sources: versionSources,
+      gaps: versionGaps,
+      insight: `<p><strong>One version:</strong> ${row("v3.2.0")} is deprecated but still used by <strong>legacy-data</strong> and <strong>sandbox-testing</strong>, last run 3 days ago. Neither is production. ${row("v4.0.0")} is the closest safe target for them.</p>`,
+      rowRefs: ["v3.2.0"],
+      nextPrompts: ["Should we deprecate v5.1.0?", "Which RDS module versions are no longer in use?"],
+      actions: ["save-view", "download-view"]
+    },
+    "When was each RDS version last used?": {
+      tier: 2,
+      query: RDS_VERSIONS,
+      feedback: true,
+      basis: "I used run history to find the last run that referenced each version.",
+      interpretation: "I read this as <strong>the most recent run, per terraform-aws-rds version, whose configuration referenced that version</strong>.",
+      sources: versionSources,
+      gaps: ["Runs older than your organization's run retention period.", ...versionGaps],
+      insight: `<p>${row("v4.0.0")} and ${row("v5.1.0")} ran today. ${row("v3.2.0")} last ran 3 days ago. ${row("v4.1.0")} (Feb 2026) and ${row("v4.2.0")} (Mar 2026) haven't been used in months, and ${row("v5.0.0")} was never used.</p>`,
+      rowRefs: ["v4.1.0", "v4.2.0", "v5.0.0"],
+      nextPrompts: versionNextPrompts,
+      actions: ["save-view", "download-view"]
+    },
+    "Should we deprecate v5.1.0?": {
+      tier: 3,
+      query: RDS_VERSIONS,
+      feedback: true,
+      interpretation: "I read this as a <strong>recommendation</strong> on v5.1.0's registry status, using the version table and the failing run in my-workspace. Read-only: nothing will be changed.",
+      sources: [
+        versionSources[0],
+        versionSources[1],
+        { label: "Run run-guDS9dmc3dn", detail: "plan diagnostics, replace_paths: db_name", freshness: "30 min ago" }
+      ],
+      gaps: ["Whether each of the 5 consumers would plan cleanly on a fix. That needs a speculative plan in each workspace."],
+      insight: `<p><strong>Yes, but publish a fix first.</strong> ${row("v5.1.0")} renames <code>db_name</code>, a force-replacement attribute, so any v4.x caller that upgrades will plan to destroy its database.</p><ol><li>Publish <strong>v5.1.1</strong> that keeps the existing <code>db_name</code> (make it an input; current v5.1.0 callers pass their current name). A <code>moved</code> block can't avoid this: the address doesn't change, the attribute does.</li><li>Deprecate ${row("v5.1.0")} with a pointer to v5.1.1 once its 5 consumers (2 production) plan cleanly on v5.1.1.</li><li>Deprecate ${row("v4.1.0")}, ${row("v4.2.0")}, and ${row("v5.0.0")} now. No workspace uses them.</li><li>Keep ${row("v3.2.0")} deprecated and follow up with its 2 owners.</li></ol>`,
+      rowRefs: ["v5.1.0", "v4.1.0", "v4.2.0", "v5.0.0"],
+      nextPrompts: ["Show blast radius for v5.1.0", "Which RDS versions are deprecated but still in use?"],
+      actions: ["copy-recommendation", "save-view", "download-view"],
+      copyText: [
+        "Recommendation: terraform-aws-rds v5.1.0",
+        "1. Publish v5.1.1 that keeps the existing db_name (make it an input; current v5.1.0 callers pass their current name). A moved block cannot avoid the replacement.",
+        "2. Deprecate v5.1.0 (pointer to v5.1.1) once its 5 consumers (2 production) plan cleanly on v5.1.1.",
+        "3. Deprecate v4.1.0, v4.2.0, v5.0.0 now (0 consumers).",
+        "4. Keep v3.2.0 deprecated; follow up with owners of legacy-data and sandbox-testing.",
+        "Sources: private registry (live), Explorer usage (indexed 6h ago), run run-guDS9dmc3dn."
+      ].join("\n")
+    },
+    "Show blast radius for v5.1.0": {
+      tier: 3,
+      query: RDS_CONSUMERS,
+      display: "graph",
+      feedback: true,
+      interpretation: "I read this as <strong>workspaces that consume terraform-aws-rds v5.1.0</strong> and would be affected by a change to it. Switched the results to the graph.",
+      sources: [
+        versionSources[1],
+        { label: "Workspace tags", detail: "environment", freshness: "live" }
+      ],
+      gaps: ["Indirect dependents, such as workspaces reading these outputs through remote state, aren't in this view."],
+      insight: `<p><strong>5 workspaces consume v5.1.0; 2 are production:</strong> ${row("payments-prod-eu")} and ${row("payments-prod-us")}. my-workspace failed before applying, so its state is still on v4.0.0.</p>`,
+      rowRefs: ["payments-prod-eu", "payments-prod-us"],
+      nextPrompts: ["Should we deprecate v5.1.0?", "Which RDS module versions are no longer in use?"],
+      actions: ["save-view", "download-view"]
     },
     explorerInitial: {
       type: "answer",
-      html: `<p>Each operation opens a new session with your current context loaded.</p>`,
+      html: `<p>Ask about the results in the table. I'll show what I changed, where the data came from, and what I couldn't check.</p>`,
       evidence: []
     },
     "View all providers": {
@@ -221,3 +523,4 @@ window.PROTOTYPE_DATA = {
     }
   }
 };
+})();
