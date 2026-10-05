@@ -47,7 +47,7 @@ test("Browse dropdown opens the original menu and runs scripted views", async ({
   await hud.getByRole("button", { name: /Types, Use cases and Saved views/ }).click();
   await expect(hud.locator(".browse-menu")).toContainText("PRE-DEFINED VIEWS");
   await hud.locator(".browse-menu").getByRole("button", { name: "Modules" }).click();
-  await expect(page.locator(".results-panel")).toContainText("View all modules");
+  await expect(page.locator(".active-query-card")).toContainText("View all modules");
 });
 
 test("a query opens Albus with a summary and the RETURNED NODES list (table)", async ({ page }) => {
@@ -192,7 +192,7 @@ test("typed natural language returns the same rows as the starting point", async
 test("an unmatched question on entry still returns a scoped Explorer table", async ({ page }) => {
   await openExplorer(page);
   await searchHud(page, "show infrastructure I should review");
-  await expect(page.locator(".results-panel")).toContainText("Production workspaces");
+  await expect(page.locator(".active-query-card")).toContainText("Production workspaces");
   await expect(tableRows(page)).toHaveCount(6);
 });
 
@@ -211,7 +211,7 @@ test("Albus questions on entry still get the Albus-derived answer", async ({ pag
 test("Edit conditions follows the Explorer builder: Type, then WHERE column / operator / value", async ({ page }) => {
   await openExplorer(page);
   await searchHud(page, "Drifted workspaces");
-  await page.getByRole("button", { name: "Edit conditions" }).click();
+  await page.getByRole("button", { name: /Show conditions/ }).click();
 
   const editor = page.locator("#conditions-form");
   await expect(editor.getByLabel("Type")).toHaveValue("workspaces");
@@ -242,7 +242,7 @@ test("Edit conditions follows the Explorer builder: Type, then WHERE column / op
 test("changing Type in the builder swaps the available columns", async ({ page }) => {
   await openExplorer(page);
   await searchHud(page, "Drifted workspaces");
-  await page.getByRole("button", { name: "Edit conditions" }).click();
+  await page.getByRole("button", { name: /Show conditions/ }).click();
   const editor = page.locator("#conditions-form");
 
   await editor.getByLabel("Type").selectOption("modules");
@@ -257,7 +257,7 @@ test("the page search field is hidden while the query builder is open", async ({
   await openExplorer(page);
   await searchHud(page, "Drifted workspaces");
   await page.locator("#advisor-close").click();
-  await page.getByRole("button", { name: "Edit conditions" }).click();
+  await page.getByRole("button", { name: /Show conditions/ }).click();
   await expect(hudInput(page)).toHaveCount(0);
 
   await page.locator("#conditions-form").getByRole("button", { name: "Cancel" }).click();
@@ -270,7 +270,7 @@ test("removing a refinement's condition in the builder restores its rows", async
   await askAlbus(page, "only staging");
   await expect(tableRows(page)).toHaveCount(2);
 
-  await page.getByRole("button", { name: "Edit conditions" }).click();
+  await page.getByRole("button", { name: /Show conditions/ }).click();
   await page.locator('[data-condition-row="1"]').getByRole("button", { name: "Remove condition" }).click();
   await page.locator("#conditions-form").getByRole("button", { name: "Apply" }).click();
   await expect(tableRows(page)).toHaveCount(8);
@@ -284,21 +284,82 @@ test("entry card points to Albus when the panel is open before any query", async
   await expect(page.locator(".explorer-hud")).toContainText("Type your question in Albus →, or pick a starting point below.");
 });
 
-test("breadcrumb: Explorer links back to the entry card; CoolCorp goes to Workspaces", async ({ page }) => {
+test("Active query card links back to the entry card (Albus stays open)", async ({ page }) => {
   await openExplorer(page);
   await searchHud(page, "Drifted workspaces");
-  const crumbs = page.locator(".explorer-header .breadcrumbs");
-  await expect(crumbs.locator('[aria-current="page"]')).toHaveText("Drifted workspaces");
+  const card = page.locator(".active-query-card");
+  await expect(card.locator(".aq-label")).toHaveText("ACTIVE QUERY");
+  await expect(card.locator(".aq-title")).toHaveText("Drifted workspaces");
+  await expect(card.locator(".aq-count")).toHaveText("8 workspaces");
 
-  await crumbs.getByRole("button", { name: "Explorer" }).click();
+  await card.getByRole("button", { name: "← Back to query and results" }).click();
   await expect(page.locator(".explorer-hud")).toBeVisible();
-  // Going back keeps Albus open; the entry card points to it instead of showing a second text box.
   await expect(panel(page)).toHaveClass(/is-open/);
   await expect(page.locator(".explorer-hud")).toContainText("Type your question in Albus →");
   await expect(page.locator('.side-nav button[data-nav-item="workspaces"]')).toBeVisible();
 
   await page.locator(".explorer-hud .breadcrumbs").getByRole("button", { name: "CoolCorp" }).click();
   await expect(page.locator(".standard-page h1")).toHaveText("Workspaces");
+});
+
+test("Show conditions collapses to tags and expands into the builder", async ({ page }) => {
+  await openExplorer(page);
+  await searchHud(page, "Drifted workspaces");
+  const accordion = page.locator(".conditions-accordion");
+  await expect(accordion.locator(".conditions-toggle")).toHaveAttribute("aria-expanded", "false");
+  await expect(accordion).toContainText("Show conditions");
+  await expect(accordion).toContainText("Conditions applied:");
+  await expect(accordion.locator(".query-chip")).toHaveText(["Workspaces", "Drifted is true"]);
+
+  await accordion.locator(".conditions-toggle").click();
+  await expect(accordion).toContainText("Hide conditions");
+  await expect(accordion.locator("#conditions-form")).toBeVisible();
+  await accordion.locator(".conditions-toggle").click();
+  await expect(accordion.locator("#conditions-form")).toHaveCount(0);
+
+  // A query with no conditions says so.
+  await page.locator(".active-query-card .aq-back").click();
+  await page.locator(".hud-prompts").getByRole("button", { name: /View all modules/ }).click();
+  await expect(page.locator(".conditions-accordion")).toContainText("No conditions applied");
+});
+
+test("View columns hides and restores table columns (Name is always shown)", async ({ page }) => {
+  await openExplorer(page);
+  await searchHud(page, "Drifted workspaces");
+  const headers = page.locator(".results-table thead th:not(.check-col)");
+  await expect(headers).toHaveText(["Name", "Project name", "Current run ID", "Run status", "Details"]);
+
+  await page.getByRole("button", { name: /View columns/ }).click();
+  const menu = page.locator(".columns-menu");
+  await expect(menu.getByLabel("Name", { exact: true })).toBeDisabled();
+  await menu.getByLabel("Current run ID").uncheck();
+  await expect(headers).toHaveText(["Name", "Project name", "Run status", "Details"]);
+  await menu.getByLabel("Current run ID").check();
+  await expect(headers).toHaveText(["Name", "Project name", "Current run ID", "Run status", "Details"]);
+
+  // Table rows: checkbox + linked name (design 02); the name link opens the row in Albus.
+  await expect(page.locator('tr[data-row-key="payments-prod-eu"] input[type=checkbox]')).toBeVisible();
+  await page.locator(".results-table .row-name-link", { hasText: "analytics-prod" }).click();
+  await expect(page.locator("#conversation .node-row.is-open")).toContainText("analytics-prod");
+});
+
+test("graph view uses a floating HUD with the Active query card and can be hidden", async ({ page }) => {
+  await openExplorer(page);
+  await searchHud(page, "Drifted workspaces");
+  await page.getByRole("button", { name: "Graph" }).click();
+
+  const hud = page.locator(".graph-hud");
+  await expect(hud.locator(".active-query-card")).toContainText("Drifted workspaces");
+  await expect(page.locator(".force-tools")).toContainText("Force");
+  // Going back keeps Graph selected on the entry card.
+  await hud.locator(".aq-back").click();
+  await expect(page.locator(".hud-toggle button.active")).toHaveText("Graph");
+  await page.locator(".hud-prompts").getByRole("button", { name: /View all modules/ }).click();
+  await expect(page.locator(".relationship-topology")).toBeVisible();
+  await page.locator(".graph-hud").getByRole("button", { name: "HIDE" }).click();
+  await expect(page.locator(".graph-hud")).toHaveCount(0);
+  await page.getByRole("button", { name: "VIEW" }).click();
+  await expect(page.locator(".graph-hud")).toBeVisible();
 });
 
 test("side navigation can be expanded from Explorer results to get back to Workspaces", async ({ page }) => {

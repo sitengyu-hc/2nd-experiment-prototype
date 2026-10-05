@@ -52,7 +52,7 @@ test("tier 1 from the run: Explorer opens as a table with chips and a one-line r
 
   await expect(advisor(page)).toHaveClass(/is-open/);
   await expect(page.locator(".results-table tbody tr")).toHaveCount(5);
-  await expect(page.locator(".active-query.in-bar .query-chip")).toHaveText(["Modules", "Name is terraform-aws-rds", "Version is 5.1.0"]);
+  await expect(page.locator(".conditions-accordion .query-chip")).toHaveText(["Modules", "Name is terraform-aws-rds", "Version is 5.1.0"]);
   // The panel is open, so the top bar shows chips, not a second text box.
   await expect(page.locator("#explorer-ask-input")).toHaveCount(0);
   await expect(conversation(page)).toContainText("Five other workspaces");
@@ -63,7 +63,7 @@ test("tier 1 from the run: Explorer opens as a table with chips and a one-line r
   await page.locator("#advisor-input").fill("only production");
   await page.locator("#advisor-input").press("Enter");
   await expect(page.locator(".results-table tbody tr")).toHaveCount(2);
-  await expect(page.locator(".active-query .query-chip").last()).toHaveText("Workspaces contains production");
+  await expect(page.locator(".conditions-accordion .query-chip").last()).toHaveText("Workspaces contains production");
   await expect(page.locator(".receipt").last()).toContainText("Refined: + Workspaces contains production");
   await page.locator(".receipt").last().getByRole("button", { name: "Undo" }).click();
   await expect(page.locator(".results-table tbody tr")).toHaveCount(5);
@@ -74,9 +74,9 @@ test("tier 1 from the run: Explorer opens as a table with chips and a one-line r
   await expect(conversation(page)).toContainText("Five other workspaces");
 });
 
-test("breadcrumb back to Explorer keeps Albus open with the run conversation", async ({ page }) => {
+test("Back to query and results keeps Albus open with the run conversation", async ({ page }) => {
   await openRunInExplorer(page);
-  await page.locator(".explorer-header .breadcrumbs").getByRole("button", { name: "Explorer" }).click();
+  await page.locator(".active-query-card").getByRole("button", { name: "← Back to query and results" }).click();
 
   await expect(page.locator(".explorer-hud")).toBeVisible();
   await expect(advisor(page)).toHaveClass(/is-open/);
@@ -106,7 +106,7 @@ test("tier 2 → tier 3 → graph → save → export (demo flow §5)", async ({
   await expect(card).toContainText("Couldn't check");
   await expect(card).toContainText("Applied to table");
   await expect(page.locator(".derived-banner")).toContainText("Albus-derived view");
-  await expect(page.locator(".results-panel")).toContainText("terraform-aws-rds — all published versions");
+  await expect(page.locator(".active-query-card")).toContainText("terraform-aws-rds — all published versions");
   await expect(page.locator("th.albus-col")).toHaveText(["✦ Registry status", "✦ Last used", "✦ Note"]);
   await expect(page.locator("th.albus-col").first()).toHaveAttribute("title", /Private registry/);
   await expect(page.locator(".derived-table tbody tr")).toHaveCount(6);
@@ -140,19 +140,21 @@ test("tier 2 → tier 3 → graph → save → export (demo flow §5)", async ({
   // Back to the derived view, save it (keeps ✦ badge), then export CSV.
   await page.locator(".answer-card").last().getByRole("button", { name: "Undo" }).click();
   await expect(page.locator(".derived-banner")).toBeVisible();
-  await page.locator(".results-panel").getByRole("button", { name: /Save as view/ }).click();
+  await page.locator(".table-actions").getByRole("button", { name: /Save as view/ }).click();
   await expect(page.locator("#view-name")).toHaveValue("RDS version lifecycle");
   await page.getByRole("button", { name: "Save view", exact: true }).click();
   await expect(page.locator(".saved-note")).toContainText("RDS version lifecycle");
-  await page.getByRole("button", { name: /Types, Use cases and Saved views/i }).click();
+
+  const download = page.waitForEvent("download");
+  await page.locator(".table-actions").getByRole("button", { name: /Export CSV/ }).click();
+  expect((await download).suggestedFilename()).toBe("rds-version-lifecycle.csv");
+
+  // The saved view (with its ✦ badge) is listed under Browse → Saved views on the Explorer entry card.
+  await page.locator(".active-query-card").getByRole("button", { name: "← Back to query and results" }).click();
+  await page.locator(".explorer-hud").getByRole("button", { name: /Types, Use cases and Saved views/i }).click();
   await page.locator("[data-action=saved-views]").click();
   await expect(page.locator(".explorer-modal")).toContainText("RDS version lifecycle");
   await expect(page.locator(".explorer-modal .derived-tag")).toContainText("Albus-derived");
-  await page.locator(".explorer-modal [data-action=close-modal]").click();
-
-  const download = page.waitForEvent("download");
-  await page.locator(".results-panel").getByRole("button", { name: /Export CSV/ }).click();
-  expect((await download).suggestedFilename()).toBe("rds-version-lifecycle.csv");
 });
 
 test("table rows have no hover affordance; graph selection shows in the Albus list and survives Table/Graph", async ({ page }) => {
@@ -168,7 +170,7 @@ test("table rows have no hover affordance; graph selection shows in the Albus li
   await page.getByRole("button", { name: "Graph" }).click();
   await page.locator('[data-graph-node="payments-prod-eu"]').click();
   await expect(conversation(page).locator(".node-row.is-open")).toContainText("payments-prod-eu");
-  await expect(page.locator(".active-query")).toContainText("Drifted is true");
+  await expect(page.locator(".graph-hud .active-query-card")).toContainText("Drifted workspaces");
 
   await page.getByRole("button", { name: "Table" }).click();
   await expect(row).toHaveClass(/is-selected/);

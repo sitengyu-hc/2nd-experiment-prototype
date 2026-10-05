@@ -33,6 +33,9 @@
     queryAlbus: null,
     refinements: [], // ids of data.refinements applied to the current query
     nodeSearch: "", // filter text for the RETURNED NODES list in the Albus panel
+    hiddenColumns: [], // table columns hidden via "View columns"
+    columnsMenuOpen: false,
+    graphHudHidden: false,
     conditionDraft: null,
     editingConditions: false,
     queryHistory: [],
@@ -217,46 +220,85 @@
       ${state.modal === "saved-views" ? savedViewsModal() : ""}
     </div>`;
     }
+    // Results follow the designer layout (design-assets/explorer-oct-5): table view has the Active query card,
+    // Show conditions, and View columns above the table; graph view has a floating HUD over the canvas.
+    if (state.explorerDisplay === "graph" && !info.derived) {
+      return `<div class="explorer-page explorer-graph-page">
+        <div class="explorer-canvas is-full">${graphFor(info)}${state.advisorOpen ? "" : nodeDetailCard()}</div>
+        ${state.graphHudHidden
+          ? '<button type="button" class="graph-hud-show" data-action="toggle-graph-hud">VIEW</button>'
+          : `<section class="graph-hud" aria-label="Query">
+              <div class="graph-hud-top">${displayToggle(info)}<button type="button" class="graph-hud-hide" data-action="toggle-graph-hud">HIDE</button></div>
+              ${activeQueryCard(info)}${receiptLine(info)}${refineField(info)}
+            </section>`}
+        ${state.modal === "save-view" ? saveViewModal() : ""}
+      </div>`;
+    }
+    const spec = tableSpec(info);
+    const savedNote = state.lastSaved ? `<span class="saved-note">Saved as “${escapeHtml(state.lastSaved)}”</span>` : "";
     return `<div class="explorer-page table-first">
-      <header class="explorer-header">
-        <nav class="breadcrumbs" aria-label="Breadcrumb"><button type="button" class="text-link" data-nav="workspaces">CoolCorp</button>　/　${info ? `<button type="button" class="text-link" data-action="back-to-explorer">Explorer</button>　/　<strong aria-current="page">${escapeHtml(info.title)}</strong>` : '<strong aria-current="page">Explorer</strong>'}</nav>
-        <div class="explorer-title-row"><h1>${icon("explorer")} Explorer</h1>${info ? browseControl() : ""}</div>
-      </header>
-      ${info ? queryRow(info, state.advisorOpen) : ""}
-      ${state.editingConditions && info ? conditionsEditor() : ""}
-      ${info && !state.advisorOpen && state.receipt ? `<div class="query-receipt" role="status"><span class="ask-spark">✦</span><span><strong>${escapeHtml(state.receipt.label)}:</strong> ${escapeHtml(state.receipt.text)}</span>${state.receipt.applied ? appliedActions() : '<div class="card-actions"><button type="button" data-action="edit-conditions">Edit conditions</button></div>'}</div>` : ""}
-      ${info && !state.advisorOpen && !state.editingConditions ? askBar("Refine these results or ask a question…") : ""}
-      <section class="explorer-results">${resultsView(info)}</section>
+      <div class="active-query-row">${activeQueryCard(info)}${displayToggle(info)}</div>
+      ${conditionsAccordion()}
+      ${receiptLine(info)}
+      ${refineField(info)}
+      ${info.derived ? derivedBanner() : ""}
+      <div class="table-toolbar">${viewColumnsControl(spec)}<div class="table-actions">${savedNote}<button type="button" data-action="save-view">▣ Save as view</button><button type="button" data-action="download-view">⇩ Export CSV</button></div></div>
+      <section class="explorer-results"><div class="results-panel ${info.derived ? "is-derived" : ""}">${renderTable(spec)}</div></section>
       ${state.modal === "saved-views" ? savedViewsModal() : ""}
       ${state.modal === "save-view" ? saveViewModal() : ""}
     </div>`;
+  }
+
+  // "← Back to query and results" returns to the Explorer entry HUD (Albus panel stays as it is).
+  function activeQueryCard(info) {
+    return `<section class="active-query-card" aria-label="Active query">
+      <span class="aq-label">ACTIVE QUERY</span>
+      <strong class="aq-title">${info.derived ? '<span class="derived-tag" title="Computed by Albus, not a native Explorer query">✦ Albus-derived</span> ' : ""}${escapeHtml(info.title)}</strong>
+      <span class="aq-count">${tableCountLabel(info)}</span>
+      <button type="button" class="aq-back" data-action="back-to-explorer">← Back to query and results</button>
+    </section>`;
+  }
+
+  function displayToggle(info) {
+    const graphDisabled = info.derived ? 'disabled title="Graph shows relationships. Select v5.1.0 or ask “show blast radius” to see its consumers."' : "";
+    const graphActive = state.explorerDisplay === "graph" && !info.derived;
+    return `<div class="display-toggle" role="group" aria-label="Display"><button type="button" data-display="graph" class="${graphActive ? "active" : ""}" aria-pressed="${graphActive}" ${graphDisabled}>${viewIcons.graph}Graph</button><button type="button" data-display="table" class="${graphActive ? "" : "active"}" aria-pressed="${!graphActive}">${viewIcons.table}Table</button></div>`;
+  }
+
+  // Collapsed: "Show conditions" with the applied conditions as tags. Expanded: the Explorer-style builder.
+  function conditionsAccordion() {
+    const open = state.editingConditions;
+    const tags = [
+      `<span class="query-chip type"><b>${escapeHtml(typeLabel(state.queryType))}</b></span>`,
+      ...state.queryConditions.map(condition => `<span class="query-chip">${escapeHtml(conditionText(state.queryType, condition))}</span>`),
+      state.queryAlbus ? `<span class="query-chip albus">✦ ${escapeHtml(state.queryAlbus)}</span>` : ""
+    ].join("");
+    const summary = state.queryConditions.length || state.queryAlbus ? "Conditions applied:" : 'No conditions applied <span class="info-dot" title="Expand this section to modify your search query.">i</span>';
+    return `<section class="conditions-accordion ${open ? "is-open" : ""}">
+      <button type="button" class="conditions-toggle" data-action="toggle-conditions" aria-expanded="${open}"><span class="conditions-chevron" aria-hidden="true">⌄</span><span class="conditions-text"><strong>${open ? "Hide conditions" : "Show conditions"}</strong><span class="conditions-summary">${summary} <span class="query-chips">${tags}</span></span></span></button>
+      ${open ? conditionsEditor() : ""}
+    </section>`;
+  }
+
+  function receiptLine(info) {
+    if (!info || state.advisorOpen || !state.receipt) return "";
+    return `<div class="query-receipt" role="status"><span class="ask-spark">✦</span><span><strong>${escapeHtml(state.receipt.label)}:</strong> ${escapeHtml(state.receipt.text)}</span>${state.receipt.applied ? appliedActions() : '<div class="card-actions"><button type="button" data-action="edit-conditions">Edit conditions</button></div>'}</div>`;
+  }
+
+  function refineField(info) {
+    return info && !state.advisorOpen && !state.editingConditions ? askBar("Refine these results or ask a question…") : "";
+  }
+
+  function viewColumnsControl(spec) {
+    const open = state.columnsMenuOpen;
+    const items = spec.columns.map(column => `<label><input type="checkbox" data-column-toggle="${column.id}" ${column.locked || !state.hiddenColumns.includes(column.id) ? "checked" : ""} ${column.locked ? "disabled" : ""}> ${escapeHtml(column.label)}</label>`).join("");
+    return `<div class="view-columns"><button type="button" class="view-columns-button" data-action="toggle-columns" aria-expanded="${open}">View columns <span aria-hidden="true">⌄</span></button>${open ? `<div class="columns-menu" role="group" aria-label="Columns">${items}</div>` : ""}</div>`;
   }
 
   // One field for both NL scenarios: a complex Explorer query typed instead of clicked, or a question
   // Explorer can't answer from its own data (Albus brings in other sources). Hidden while the builder is open.
   function askBar(placeholder) {
     return `<form id="explorer-ask-form" class="ask-bar"><span class="ask-spark">✦</span><input id="explorer-ask-input" type="text" autocomplete="off" placeholder="${escapeAttr(placeholder)}" aria-label="Search or ask a question"><button type="submit" aria-label="Search" title="Search (Enter)">↵</button></form>`;
-  }
-
-  // While the Albus panel is open the bar shows the active query as chips (never a second input).
-  function queryRow(info, inBar) {
-    const chips = [
-      `<span class="query-chip type"><b>${escapeHtml(typeLabel(state.queryType))}</b></span>`,
-      ...state.queryConditions.map(condition => `<span class="query-chip">${escapeHtml(conditionText(state.queryType, condition))}</span>`),
-      state.queryAlbus ? `<span class="query-chip albus">✦ ${escapeHtml(state.queryAlbus)}</span>` : ""
-    ].join("");
-    const graphDisabled = info.derived ? 'disabled title="Graph shows relationships. Select v5.1.0 or ask “show blast radius” to see its consumers."' : "";
-    return `<div class="active-query ${inBar ? "in-bar" : ""}" aria-label="Active query">
-      ${inBar ? '<span class="ask-spark">✦</span>' : ""}
-      ${info.derived ? '<span class="derived-tag" title="Computed by Albus, not a native Explorer query">✦ Albus-derived</span>' : ""}
-      <div class="query-chips">${chips}</div>
-      <span class="query-count">${info.count} ${info.unit}</span>
-      <div class="query-controls">
-        <button class="link-button" data-action="edit-conditions" type="button">Edit conditions</button>
-        <button class="link-button" data-action="clear-query" type="button">Clear</button>
-        <div class="view-toggle" role="group" aria-label="Display"><button type="button" data-display="table" class="${state.explorerDisplay === "table" ? "active" : ""}" aria-pressed="${state.explorerDisplay === "table"}">Table</button><button type="button" data-display="graph" class="${state.explorerDisplay === "graph" && !info.derived ? "active" : ""}" aria-pressed="${state.explorerDisplay === "graph" && !info.derived}" ${graphDisabled}>Graph</button></div>
-      </div>
-    </div>`;
   }
 
   // Same pattern as the Explorer query builder: Type, then WHERE <column> <operator> <value>, AND ...
@@ -274,7 +316,7 @@
       return `<div class="condition-row" data-condition-row="${index}"><span class="clause">${index ? "AND" : "WHERE"}</span><div class="segmented"><select data-draft="column" data-index="${index}" aria-label="Column">${columns.map(item => option(item.key, item.label, item.key === column.key)).join("")}</select><select data-draft="operator" data-index="${index}" aria-label="Operator">${operators.map(item => option(item.key, item.label, item.key === condition.operator)).join("")}</select>${valueControl}</div><button type="button" class="remove-condition" data-action="remove-condition" data-index="${index}" aria-label="Remove condition" title="Remove condition"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>`;
     }).join("");
     return `<form id="conditions-form" class="conditions-editor" aria-label="Edit conditions">
-      <div class="editor-head"><strong>Edit conditions</strong><span>Prototype: edits update the query; result rows stay scripted.</span></div>
+      <div class="editor-head"><span>Prototype: edits update the query; result rows stay scripted.</span></div>
       <label class="type-field"><span>Type</span><select data-draft="type" aria-label="Type">${schema.types.map(type => option(type.key, type.label, type.key === draft.type)).join("")}</select></label>
       ${rows || '<p class="editor-empty">No conditions applied.</p>'}
       ${draft.albus ? `<div class="condition-row albus-row"><span class="clause">AND</span><span class="albus-scope">✦ Albus adds: ${escapeHtml(draft.albus)}</span></div>` : ""}
@@ -350,18 +392,6 @@
     </section>`;
   }
 
-  function resultsView(info) {
-    if (state.explorerDisplay === "graph" && !info.derived) {
-      return `<div class="explorer-canvas">${graphFor(info)}${state.advisorOpen ? "" : nodeDetailCard()}</div>`;
-    }
-    const savedNote = state.lastSaved ? `<span class="saved-note">Saved as “${escapeHtml(state.lastSaved)}”</span>` : "";
-    return `<div class="results-panel ${info.derived ? "is-derived" : ""}">
-      <div class="table-topline"><div><strong>${info.derived ? '<span class="albus-mark">✦</span> ' : ""}${escapeHtml(info.title)}</strong><small>${tableCountLabel(info)}</small></div><div>${savedNote}<button type="button" data-action="save-view">▣ Save as view</button><button type="button" data-action="download-view">⇩ Export CSV</button></div></div>
-      ${info.derived ? derivedBanner() : ""}
-      ${info.derived ? derivedTable() : info.key === RDS_CONSUMERS ? consumersTable() : genericTable(info)}
-    </div>`;
-  }
-
   function tableCountLabel(info) {
     if (info.result && info.result.nodes.length < info.count) return `Showing ${info.result.nodes.length} of ${info.count} ${info.unit}`;
     return `${info.count} ${info.unit}`;
@@ -371,27 +401,71 @@
     return `<div class="derived-banner"><span class="albus-mark">✦</span><div><strong>Albus-derived view.</strong> Combines Explorer usage with your private registry and run history. Columns marked ✦ are computed by Albus; hover for sources.</div></div>`;
   }
 
-  // Rows aren't clickable (no hover affordance); Albus row links highlight them.
+  // Rows themselves aren't clickable; the name link selects the row (and opens it in Albus's RETURNED NODES).
   const rowClass = key => [state.highlightedRows.includes(key) ? "is-highlighted" : "", state.selectedNode === key ? "is-selected" : ""].join(" ").trim();
+  const nameLink = (key, label, alert) => `<button type="button" class="row-name-link" data-node-row="${escapeAttr(key)}">${escapeHtml(label)}</button>${alert ? ' <span class="risk-node" title="Needs review">!</span>' : ""}`;
 
-  function derivedTable() {
-    const { rows, provenance } = data.rdsVersions;
-    const head = `<tr><th>Version</th><th title="${escapeAttr(provenance.workspaces)}">Workspaces <small>(Explorer)</small></th><th class="albus-col" title="${escapeAttr(provenance.registryStatus)}">✦ Registry status</th><th class="albus-col" title="${escapeAttr(provenance.lastUsed)}">✦ Last used</th><th class="albus-col" title="${escapeAttr(provenance.note)}">✦ Note</th></tr>`;
-    const body = rows.map(item => `<tr data-row-key="${item.version}" class="${rowClass(item.version)}"><td><strong>${item.version}</strong></td><td title="${escapeAttr(provenance.workspaces)}">${item.workspaces}${item.detail ? ` <small>${escapeHtml(item.detail)}</small>` : ""}</td><td class="albus-cell" title="${escapeAttr(provenance.registryStatus)}"><span class="status-pill ${item.status}">${escapeHtml(item.registryStatus)}</span></td><td class="albus-cell" title="${escapeAttr(provenance.lastUsed)}">${item.lastUsed}</td><td class="albus-cell" title="${escapeAttr(provenance.note)}">${item.graph ? `<button type="button" class="link-button" data-action="show-blast-radius">${escapeHtml(item.note)} →</button>` : escapeHtml(item.note)}</td></tr>`).join("");
-    return `<table class="results-table derived-table"><thead>${head}</thead><tbody>${body}</tbody></table><div class="table-pagination">1–${rows.length} of ${rows.length}</div>`;
-  }
-
-  function consumersTable() {
-    const rows = visibleRows(RDS_CONSUMERS);
-    return `<table class="results-table"><thead><tr><th>Workspace</th><th>Environment</th><th>Current run</th><th>Module</th></tr></thead><tbody>${rows.map(node => `<tr data-row-key="${node.name}" class="${rowClass(node.name)}"><td><strong>${node.name}</strong></td><td>${node.environment === "production" ? '<span class="status-pill breaking">production</span>' : node.environment}</td><td>${node.runStatus}</td><td>terraform-aws-rds v5.1.0</td></tr>`).join("")}</tbody></table><div class="table-pagination">1–${rows.length} of ${rows.length}</div>`;
-  }
-
-  function genericTable(info) {
+  // Column definitions per result type, so "View columns" can hide any but the name.
+  function tableSpec(info) {
+    if (info.derived) {
+      const { rows, provenance } = data.rdsVersions;
+      return {
+        className: "derived-table",
+        rows: rows.map(item => ({ key: item.version, item })),
+        footer: `1–${rows.length} of ${rows.length}`,
+        columns: [
+          { id: "version", label: "Version", locked: true, cell: ({ item }) => nameLink(item.version, item.version) },
+          { id: "workspaces", label: "Workspaces (Explorer)", head: `Workspaces <small>(Explorer)</small>`, title: provenance.workspaces, cell: ({ item }) => `${item.workspaces}${item.detail ? ` <small>${escapeHtml(item.detail)}</small>` : ""}` },
+          { id: "registryStatus", label: "✦ Registry status", albus: true, title: provenance.registryStatus, cell: ({ item }) => `<span class="status-pill ${item.status}">${escapeHtml(item.registryStatus)}</span>` },
+          { id: "lastUsed", label: "✦ Last used", albus: true, title: provenance.lastUsed, cell: ({ item }) => item.lastUsed },
+          { id: "note", label: "✦ Note", albus: true, title: provenance.note, cell: ({ item }) => item.graph ? `<button type="button" class="link-button" data-action="show-blast-radius">${escapeHtml(item.note)} →</button>` : escapeHtml(item.note) }
+        ]
+      };
+    }
+    if (info.key === RDS_CONSUMERS) {
+      const rows = visibleRows(RDS_CONSUMERS);
+      return {
+        rows: rows.map(node => ({ key: node.name, node })),
+        footer: `1–${rows.length} of ${rows.length}`,
+        columns: [
+          { id: "name", label: "Workspace", locked: true, cell: ({ node }) => nameLink(node.name, node.name) },
+          { id: "environment", label: "Environment", cell: ({ node }) => node.environment === "production" ? '<span class="status-pill breaking">production</span>' : node.environment },
+          { id: "runStatus", label: "Current run", cell: ({ node }) => node.runStatus },
+          { id: "module", label: "Module", cell: () => "terraform-aws-rds v5.1.0" }
+        ]
+      };
+    }
     const { result } = info;
-    const relationship = ["module", "provider"].includes(result.type);
-    const head = relationship ? "<th>Name</th><th>Version</th><th>Workspaces</th>" : "<th>Name</th><th>Type</th><th>Details</th>";
-    const body = result.nodes.map(node => `<tr data-row-key="${escapeAttr(node.name)}" class="${rowClass(node.name)}"><td><strong>${escapeHtml(node.name)}</strong>${node.alert ? ' <span class="risk-node" title="Needs review">!</span>' : ""}</td>${relationship ? `<td>${escapeHtml(node.detail)}</td><td>${node.workspaces.map(escapeHtml).join(", ")}</td>` : `<td>${result.type}</td><td>${escapeHtml(node.detail)}</td>`}</tr>`).join("");
-    return `<table class="results-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table><div class="table-pagination">${result.nodes.length ? `1–${result.nodes.length}` : 0} of ${result.count}</div>`;
+    const footer = `${result.nodes.length ? `1–${result.nodes.length}` : 0} of ${result.count}`;
+    const rows = result.nodes.map(node => ({ key: node.name, node }));
+    const name = { id: "name", label: "Name", locked: true, cell: ({ node }) => nameLink(node.name, node.name, node.alert) };
+    if (["module", "provider"].includes(result.type)) {
+      return { rows, footer, columns: [name,
+        { id: "version", label: "Version", cell: ({ node }) => escapeHtml(node.detail) },
+        { id: "workspaceCount", label: "Workspace count", cell: ({ node }) => String(node.workspaces.length) },
+        { id: "workspaces", label: "Workspaces", cell: ({ node }) => node.workspaces.map(escapeHtml).join(", ") }
+      ] };
+    }
+    if (result.type === "workspace") {
+      const detail = (node, term) => escapeHtml(workspaceDetails(node).find(([label]) => label === term)?.[1] || "");
+      return { rows, footer, columns: [name,
+        { id: "projectName", label: "Project name", cell: ({ node }) => detail(node, "Project name") },
+        { id: "currentRunId", label: "Current run ID", cell: ({ node }) => detail(node, "Current run ID") },
+        { id: "runStatus", label: "Run status", cell: ({ node }) => detail(node, "Run status") },
+        { id: "details", label: "Details", cell: ({ node }) => escapeHtml(node.detail) }
+      ] };
+    }
+    return { rows, footer, columns: [name,
+      { id: "type", label: "Type", cell: () => result.type },
+      { id: "details", label: "Details", cell: ({ node }) => escapeHtml(node.detail) }
+    ] };
+  }
+
+  function renderTable(spec) {
+    const columns = spec.columns.filter(column => column.locked || !state.hiddenColumns.includes(column.id));
+    const head = columns.map(column => `<th class="${column.albus ? "albus-col" : ""}" ${column.title ? `title="${escapeAttr(column.title)}"` : ""} data-col="${column.id}">${column.head || escapeHtml(column.label)}</th>`).join("");
+    const body = spec.rows.map(row => `<tr data-row-key="${escapeAttr(row.key)}" class="${rowClass(row.key)}"><td class="check-col"><input type="checkbox" aria-label="Select ${escapeAttr(row.key)}"></td>${columns.map(column => `<td class="${column.albus ? "albus-cell" : ""}" ${column.title ? `title="${escapeAttr(column.title)}"` : ""}>${column.cell(row)}</td>`).join("")}</tr>`).join("");
+    return `<table class="results-table ${spec.className || ""}"><thead><tr><th class="check-col"><input type="checkbox" aria-label="Select all rows"></th>${head}</tr></thead><tbody>${body}</tbody></table><div class="table-pagination">${spec.footer}</div>`;
   }
 
   function graphFor(info) {
@@ -404,32 +478,33 @@
 
   function topologyCanvas() {
     const nodes = visibleRows(RDS_CONSUMERS);
-    const center = { x: 51, y: 43 };
+    // Laid out right of the floating HUD (top-left).
+    const center = { x: 60, y: 46 };
     const positions = [
-      { x: 51, y: 22 },
-      { x: 66, y: 33 },
-      { x: 66, y: 56 },
-      { x: 36, y: 56 },
-      { x: 36, y: 33 }
+      { x: 60, y: 22 },
+      { x: 76, y: 34 },
+      { x: 76, y: 60 },
+      { x: 44, y: 62 },
+      { x: 44, y: 36 }
     ];
     const lines = nodes.map((node, index) => {
       const position = positions[index];
       const x1 = center.x * 10, y1 = center.y * 6.5, x2 = position.x * 10, y2 = position.y * 6.5;
       return `<path class="${node.relation}" d="M${x1} ${y1} C${(x1 + x2) / 2} ${y1}, ${(x1 + x2) / 2} ${y2}, ${x2} ${y2}" marker-end="url(#arrow-${node.relation})"/>`;
     }).join("");
-    return `<div class="topology" aria-label="RDS module consumers"><div class="risk-banner"><span>!</span><strong>2 of these are production workspaces — changes carry elevated risk</strong></div><svg class="edges" viewBox="0 0 1000 650" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="arrow-consumer" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker></defs>${lines}</svg><button class="module-node" style="left:${center.x}%;top:${center.y}%" data-action="select-module"><span>▣</span><strong>labels/aws</strong><small>v1.3.0</small></button>${nodes.map((node, index) => `<button class="graph-node ${node.relation} ${isFocused(node.name) ? "is-focused" : ""}" style="left:${positions[index].x}%;top:${positions[index].y}%" data-graph-node="${node.name}"><span class="node-symbol">▤</span>${node.environment === "production" ? "<i>!</i>" : ""}<strong>${node.name}</strong><small>${node.environment}</small></button>`).join("")}<div class="zoom-tools"><button>20%</button><button class="active">50%</button><button>100%</button></div><div class="legend"><span><i class="workspace-key"></i> Workspace</span><span><i class="selected-key"></i> selected</span><span><i class="consumer-key"></i> direct dependent</span></div></div>`;
+    return `<div class="topology" aria-label="RDS module consumers"><div class="risk-banner"><span>!</span><strong>2 of these are production workspaces — changes carry elevated risk</strong></div><svg class="edges" viewBox="0 0 1000 650" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="arrow-consumer" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker></defs>${lines}</svg><button class="module-node" style="left:${center.x}%;top:${center.y}%" data-action="select-module"><span>▣</span><strong>labels/aws</strong><small>v1.3.0</small></button>${nodes.map((node, index) => `<button class="graph-node ${node.relation} ${isFocused(node.name) ? "is-focused" : ""}" style="left:${positions[index].x}%;top:${positions[index].y}%" data-graph-node="${node.name}"><span class="node-symbol">▤</span>${node.environment === "production" ? "<i>!</i>" : ""}<strong>${node.name}</strong><small>${node.environment}</small></button>`).join("")}<div class="force-tools"><span>Force</span><button type="button" aria-label="Previous layout">‹</button><button type="button" aria-label="Next layout">›</button></div><div class="legend"><span><i class="workspace-key"></i> Workspace</span><span><i class="selected-key"></i> selected</span><span><i class="consumer-key"></i> direct dependent</span></div></div>`;
   }
 
   function inventoryResultsCanvas(result) {
-    const positions = [[32, 28], [52, 28], [32, 42], [52, 42], [32, 56], [52, 56], [32, 70], [52, 70]];
+    const positions = [[50, 22], [72, 22], [50, 38], [72, 38], [50, 54], [72, 54], [50, 70], [72, 70]]; // right of the floating HUD
     const symbol = { module: "▱", provider: "⬡", resource: "◇", workspace: "▤" }[result.type];
-    return `<div class="topology inventory-topology type-${result.type}" aria-label="${escapeAttr(state.explorerQuery)}"><div class="result-summary"><span>${result.count}</span><strong>${escapeHtml(result.summary)}</strong></div>${result.nodes.map((node, index) => `<button class="graph-node result-${result.type} ${isFocused(node.name) ? "is-focused" : ""}" style="left:${positions[index][0]}%;top:${positions[index][1]}%" data-graph-node="${escapeAttr(node.name)}"><span class="node-symbol">${symbol}</span>${node.alert ? "<i>!</i>" : ""}<strong>${escapeHtml(node.name)}</strong><small>${escapeHtml(node.detail)}</small></button>`).join("")}<div class="zoom-tools"><button>20%</button><button class="active">50%</button><button>100%</button></div><div class="legend"><span><i class="result-key"></i> ${result.type}</span><span><i class="selected-key"></i> selected</span></div></div>`;
+    return `<div class="topology inventory-topology type-${result.type}" aria-label="${escapeAttr(state.explorerQuery)}"><div class="result-summary"><span>${result.count}</span><strong>${escapeHtml(result.summary)}</strong></div>${result.nodes.map((node, index) => `<button class="graph-node result-${result.type} ${isFocused(node.name) ? "is-focused" : ""}" style="left:${positions[index][0]}%;top:${positions[index][1]}%" data-graph-node="${escapeAttr(node.name)}"><span class="node-symbol">${symbol}</span>${node.alert ? "<i>!</i>" : ""}<strong>${escapeHtml(node.name)}</strong><small>${escapeHtml(node.detail)}</small></button>`).join("")}<div class="force-tools"><span>Force</span><button type="button" aria-label="Previous layout">‹</button><button type="button" aria-label="Next layout">›</button></div><div class="legend"><span><i class="result-key"></i> ${result.type}</span><span><i class="selected-key"></i> selected</span></div></div>`;
   }
 
   function relationshipResultsCanvas(result) {
-    const entityPositions = [[28, 27], [28, 45], [28, 63]];
+    const entityPositions = [[48, 30], [48, 50], [48, 70]]; // right of the floating HUD
     const workspaceNames = [...new Set(result.nodes.flatMap(node => node.workspaces))];
-    const workspacePositions = workspaceNames.map((_, index) => [58, 18 + index * (60 / Math.max(workspaceNames.length - 1, 1))]);
+    const workspacePositions = workspaceNames.map((_, index) => [76, 16 + index * (68 / Math.max(workspaceNames.length - 1, 1))]);
     const workspacePosition = Object.fromEntries(workspaceNames.map((name, index) => [name, workspacePositions[index]]));
     const lines = result.nodes.flatMap((node, nodeIndex) => node.workspaces.map(name => {
       const [x1, y1] = entityPositions[nodeIndex];
@@ -437,7 +512,7 @@
       return `<line x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%"/>`;
     })).join("");
     const symbol = result.type === "module" ? "▱" : "⬡";
-    return `<div class="topology relationship-topology type-${result.type}" aria-label="${escapeAttr(state.explorerQuery)}"><div class="result-summary"><span>${result.count}</span><strong>${escapeHtml(result.summary)}</strong></div><svg class="relationship-edges" aria-hidden="true">${lines}</svg>${result.nodes.map((node, index) => `<button class="graph-node relation-entity result-${result.type} ${isFocused(node.name) ? "is-focused" : ""}" style="left:${entityPositions[index][0]}%;top:${entityPositions[index][1]}%" data-graph-node="${node.name}"><span class="node-symbol">${symbol}</span><strong>${node.name}</strong><small>${node.detail}</small></button>`).join("")}${workspaceNames.map(name => `<button class="graph-node relation-workspace ${isFocused(name) ? "is-focused" : ""}" style="left:${workspacePosition[name][0]}%;top:${workspacePosition[name][1]}%" data-graph-node="${name}"><span class="node-symbol">▤</span><strong>${name}</strong><small>workspace</small></button>`).join("")}<div class="zoom-tools"><button>20%</button><button class="active">50%</button><button>100%</button></div><div class="legend"><span><i class="result-key"></i> ${result.type}</span><span><i class="workspace-key"></i> workspace</span><span><i class="selected-key"></i> selected</span></div></div>`;
+    return `<div class="topology relationship-topology type-${result.type}" aria-label="${escapeAttr(state.explorerQuery)}"><div class="result-summary"><span>${result.count}</span><strong>${escapeHtml(result.summary)}</strong></div><svg class="relationship-edges" aria-hidden="true">${lines}</svg>${result.nodes.map((node, index) => `<button class="graph-node relation-entity result-${result.type} ${isFocused(node.name) ? "is-focused" : ""}" style="left:${entityPositions[index][0]}%;top:${entityPositions[index][1]}%" data-graph-node="${node.name}"><span class="node-symbol">${symbol}</span><strong>${node.name}</strong><small>${node.detail}</small></button>`).join("")}${workspaceNames.map(name => `<button class="graph-node relation-workspace ${isFocused(name) ? "is-focused" : ""}" style="left:${workspacePosition[name][0]}%;top:${workspacePosition[name][1]}%" data-graph-node="${name}"><span class="node-symbol">▤</span><strong>${name}</strong><small>workspace</small></button>`).join("")}<div class="force-tools"><span>Force</span><button type="button" aria-label="Previous layout">‹</button><button type="button" aria-label="Next layout">›</button></div><div class="legend"><span><i class="result-key"></i> ${result.type}</span><span><i class="workspace-key"></i> workspace</span><span><i class="selected-key"></i> selected</span></div></div>`;
   }
 
   function nodeDetailCard() {
@@ -519,6 +594,8 @@
     loadQuery(key);
     state.refinements = [];
     state.nodeSearch = "";
+    state.hiddenColumns = [];
+    state.columnsMenuOpen = false;
     // New queries keep the chosen view mode (entry HUD or Table/Graph toggle) unless the answer asks for one.
     state.explorerDisplay = options.display || state.explorerDisplay || "table";
     state.highlightedRows = [];
@@ -553,6 +630,8 @@
     state.queryAlbus = null;
     state.refinements = [];
     state.nodeSearch = "";
+    state.hiddenColumns = [];
+    state.columnsMenuOpen = false;
     state.conditionDraft = null;
     state.queryHistory = [];
     state.highlightedRows = [];
@@ -727,7 +806,7 @@
     const production = /prod/.test(node.name) || node.environment === "production";
     return [
       ["Project name", node.environment && node.environment !== "production" ? node.environment : production ? "production" : "platform"],
-      ["Current run ID", `run-${node.name.replace(/[^a-z]/g, "").slice(0, 6)}2nLvYw`],
+      ["Current run ID", `run-${btoa(node.name).replace(/[^a-z0-9]/gi, "").slice(-12).toLowerCase()}`],
       ["Run status", node.runStatus || (node.alert ? "drifted" : "applied")],
       ["Current run applied", "Mar 12, 2025 11:22:05 am"],
       ["VCS repo", `example1/${node.name}`],
@@ -910,6 +989,10 @@
       state.browseOpen = false;
       renderMain();
     }
+    if (state.columnsMenuOpen && !event.target.closest(".view-columns")) {
+      state.columnsMenuOpen = false;
+      renderMain();
+    }
 
     const nav = event.target.closest("[data-nav]");
     if (nav) {
@@ -977,7 +1060,11 @@
       renderConversation();
     }
     if (action === "close-modal") { state.modal = null; renderMain(); }
-    if (action === "edit-conditions") {
+    if (action === "toggle-conditions" && state.editingConditions) { state.editingConditions = false; state.conditionDraft = null; renderMain(); return; }
+    if (action === "toggle-columns") { state.columnsMenuOpen = !state.columnsMenuOpen; renderMain(); }
+    if (action === "toggle-graph-hud") { state.graphHudHidden = !state.graphHudHidden; renderMain(); }
+    if (action === "edit-conditions" || action === "toggle-conditions") {
+      if (state.explorerDisplay === "graph") state.explorerDisplay = "table";
       state.conditionDraft = { type: state.queryType, conditions: state.queryConditions.map(condition => ({ ...condition })), albus: state.queryAlbus };
       state.editingConditions = true;
       renderMain();
@@ -989,7 +1076,9 @@
     if (action === "undo-query") undoQuery();
     // Breadcrumb "Explorer" and "Clear" both return to the entry card. The Albus panel and conversation stay as they are.
     if (action === "clear-query" || action === "back-to-explorer") {
+      const display = state.explorerDisplay; // keep the chosen view mode when going back
       resetExplorerQuery();
+      state.explorerDisplay = display;
       if (!state.impactMode) { state.navCollapsed = false; updateNavigation(); }
       renderMain();
       renderConversation();
@@ -1008,7 +1097,10 @@
     if (graphNode) selectNode(graphNode.dataset.graphNode);
 
     const nodeRow = event.target.closest("[data-node-row]");
-    if (nodeRow) selectNode(nodeRow.dataset.nodeRow);
+    if (nodeRow) {
+      if (!state.advisorOpen && main.contains(nodeRow)) { state.selectedNode = nodeRow.dataset.nodeRow; openAdvisor(); }
+      else selectNode(nodeRow.dataset.nodeRow);
+    }
 
     if (event.target.closest("#prompt-toggle")) {
       state.promptsOpen = !state.promptsOpen;
@@ -1063,6 +1155,13 @@
 
   // Query builder draft: selects re-render (operators/value depend on column); text input updates in place.
   document.addEventListener("change", event => {
+    const columnToggle = event.target.closest("[data-column-toggle]");
+    if (columnToggle) {
+      const id = columnToggle.dataset.columnToggle;
+      state.hiddenColumns = columnToggle.checked ? state.hiddenColumns.filter(item => item !== id) : [...state.hiddenColumns, id];
+      renderMain();
+      return;
+    }
     const field = event.target.closest("[data-draft]");
     if (!field || !state.conditionDraft) return;
     if (updateDraft(field.dataset.draft, Number(field.dataset.index), field.value)) renderMain();
