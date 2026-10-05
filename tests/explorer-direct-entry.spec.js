@@ -22,8 +22,8 @@ test("direct Explorer entry: one Ask bar, Albus panel closed, starters available
   await expect(askBar(page)).toHaveAttribute("placeholder", "e.g. drifted production workspaces, or unused module versions");
   await expect(page.locator("#advisor-input")).not.toBeInViewport();
   await expect(page.locator(".advisor-collapsed .collapsed-composer")).toBeHidden();
-  await expect(page.locator(".starter-prompts")).toContainText("Drifted workspaces");
-  await expect(page.locator(".starter-prompts")).toContainText("Which RDS module versions are no longer in use?");
+  await expect(page.locator(".starter-prompts").first()).toContainText("Drifted workspaces");
+  await expect(page.locator(".albus-group")).toContainText("Which RDS module versions are no longer in use?");
 });
 
 test("tier 1 on direct entry updates the table only; panel stays closed", async ({ page }) => {
@@ -117,7 +117,7 @@ test("typed natural language returns the same rows as the starter query", async 
   const typedRows = await page.locator(".results-table tbody tr").allTextContents();
 
   await openExplorer(page);
-  await page.locator(".starter-prompts").getByRole("button", { name: "View all modules" }).click();
+  await page.locator(".starter-card").getByRole("button", { name: "View all modules" }).click();
   const starterRows = await page.locator(".results-table tbody tr").allTextContents();
 
   expect(typedRows).not.toHaveLength(0);
@@ -146,12 +146,21 @@ test("entry HUD keeps the original Browse dropdown above the four starting point
   await openExplorer(page);
   const hud = page.locator(".starter-card");
   await expect(hud.locator(".field-label")).toHaveText(["BROWSE", "EXPLORE YOUR INFRASTRUCTURE", "SEARCH OR ASK A QUESTION"]);
-  await expect(hud.locator(".starter-prompts button")).toHaveCount(4);
-  // The Ask field sits under the starting points, inside the HUD (not at the top of the page).
-  await expect(hud.locator("#explorer-ask-input")).toBeVisible();
-  const options = await hud.locator(".starter-prompts").boundingBox();
-  const ask = await hud.locator(".ask-bar").boundingBox();
-  expect(ask.y).toBeGreaterThan(options.y + options.height);
+  // Explorer's own starting points on top; Albus (description, example question, search field) grouped below.
+  const explorerOptions = hud.locator(".starter-prompts:not(.albus-starters) button");
+  await expect(explorerOptions).toHaveText(["Drifted workspaces→", "View all modules→", "View all providers→"]);
+  const albus = hud.locator(".albus-group");
+  await expect(albus.locator(".albus-group-note")).toContainText("Albus turns questions into Explorer queries");
+  await expect(albus.locator(".albus-starters button")).toHaveText(["✦ Which RDS module versions are no longer in use?→"]);
+  await expect(albus.locator("#explorer-ask-input")).toBeVisible();
+  const options = await hud.locator(".starter-prompts:not(.albus-starters)").boundingBox();
+  const group = await albus.boundingBox();
+  expect(group.y).toBeGreaterThan(options.y + options.height);
+  const note = await albus.locator(".albus-group-note").boundingBox();
+  const example = await albus.locator(".albus-starters").boundingBox();
+  const ask = await albus.locator(".ask-bar").boundingBox();
+  expect(example.y).toBeGreaterThan(note.y);
+  expect(ask.y).toBeGreaterThan(example.y);
 
   await hud.getByRole("button", { name: /Types, Use cases and Saved views/ }).click();
   await expect(hud.locator(".browse-menu")).toContainText("PRE-DEFINED VIEWS");

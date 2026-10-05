@@ -318,8 +318,23 @@
     return `<div class="browse-menu"><div><span>TYPES</span><button>Workspaces</button><button>Policy Sets</button><button data-prompt="View all modules">Modules</button><button data-prompt="View all providers">Providers</button><button>Resources</button><button>Terraform Versions</button><button data-action="saved-views">Saved views <strong>${20 + state.savedViews.length}</strong></button></div><div><span>PRE-DEFINED VIEWS</span><button>View All Workspaces</button><button>Organized by Project</button><button>Organized by Status</button><button>Workspaces with failed checks</button><button data-prompt="Drifted workspaces">Drifted Workspaces</button><button>Latest updated workspaces</button></div></div>`;
   }
 
+  // Entry HUD: Explorer's own starting points on top; everything Albus (what it does, an example
+  // question, and the search field) grouped at the bottom.
   function starterView() {
-    return `<div class="explorer-starter"><div class="starter-card"><strong>Ask a question or pick a starting point.</strong><p>Albus turns questions into Explorer queries you can see and edit. Albus can also combine Explorer with your registry and run history, and always shows which sources it used.</p><label class="field-label">BROWSE</label>${browseControl()}<label class="field-label">EXPLORE YOUR INFRASTRUCTURE</label><div class="starter-prompts">${data.explorerStarters.map(starter => `<button type="button" class="${starter.albus ? "albus" : ""}" data-prompt="${escapeAttr(starter.text)}"><span>${starter.albus ? "✦ " : ""}${escapeHtml(starter.text)}</span><b>→</b></button>`).join("")}</div><label class="field-label" for="explorer-ask-input">SEARCH OR ASK A QUESTION</label>${state.advisorOpen ? '<p class="ask-hint">Type your question in Albus →, or pick a starting point above.</p>' : askBar("e.g. drifted production workspaces, or unused module versions")}</div></div>`;
+    const starterButton = starter => `<button type="button" class="${starter.albus ? "albus" : ""}" data-prompt="${escapeAttr(starter.text)}"><span>${starter.albus ? "✦ " : ""}${escapeHtml(starter.text)}</span><b>→</b></button>`;
+    const explorerStarters = data.explorerStarters.filter(starter => !starter.albus);
+    const albusStarters = data.explorerStarters.filter(starter => starter.albus);
+    return `<div class="explorer-starter"><div class="starter-card">
+      <strong>Pick a starting point or ask a question.</strong>
+      <label class="field-label">BROWSE</label>${browseControl()}
+      <label class="field-label">EXPLORE YOUR INFRASTRUCTURE</label><div class="starter-prompts">${explorerStarters.map(starterButton).join("")}</div>
+      <div class="albus-group">
+        <label class="field-label" for="explorer-ask-input">SEARCH OR ASK A QUESTION</label>
+        <p class="albus-group-note">Albus turns questions into Explorer queries you can see and edit. Albus can also combine Explorer with your registry and run history, and always shows which sources it used.</p>
+        <div class="starter-prompts albus-starters">${albusStarters.map(starterButton).join("")}</div>
+        ${state.advisorOpen ? '<p class="ask-hint">Type your question in Albus →, or pick a starting point above.</p>' : askBar("e.g. drifted production workspaces, or unused module versions")}
+      </div>
+    </div></div>`;
   }
 
   function resultsView(info) {

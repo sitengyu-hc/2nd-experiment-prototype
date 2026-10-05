@@ -456,6 +456,9 @@ tr.clickable:hover { background: #f1f6ff; }
 .starter-card .field-label { margin: 16px 0 7px; }
 .starter-card .browse-menu { width: 100%; }
 .starter-card .ask-bar { width: 100%; }
+.albus-group { display: grid; gap: 8px; margin-top: 18px; padding-top: 2px; border-top: 1px solid #ececf0; }
+.albus-group .field-label { margin: 14px 0 0; }
+.albus-group-note { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .starter-card .select-control { padding: 10px 12px; border-color: #9da2ad; cursor: pointer; }
 .starter-prompts button { display: flex; align-items: center; gap: 10px; width: 100%; border: 1px solid #d8dae0; border-radius: 6px; background: #fff; padding: 9px 12px; color: #075bd8; text-align: left; font-size: 13px; cursor: pointer; }
 .starter-prompts button:hover { border-color: #1060ff; background: #f5f8ff; }
