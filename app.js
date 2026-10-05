@@ -213,7 +213,7 @@
     const info = queryInfo(state.explorerQuery);
     return `<div class="explorer-page table-first">
       <header class="explorer-header">
-        <div class="breadcrumbs">CoolCorp　/　Explorer　/　<strong>${info ? escapeHtml(info.title) : "Types"}</strong></div>
+        <nav class="breadcrumbs" aria-label="Breadcrumb"><button type="button" class="text-link" data-nav="workspaces">CoolCorp</button>　/　${info ? `<button type="button" class="text-link" data-action="back-to-explorer">Explorer</button>　/　<strong aria-current="page">${escapeHtml(info.title)}</strong>` : '<strong aria-current="page">Explorer</strong>'}</nav>
         <div class="explorer-title-row"><h1>${icon("explorer")} Explorer</h1>${info ? browseControl() : ""}</div>
       </header>
       ${info ? queryRow(info, state.advisorOpen) : ""}
@@ -886,7 +886,8 @@
     if (action === "remove-condition") { state.conditionDraft.conditions.splice(Number(event.target.closest("[data-index]").dataset.index), 1); renderMain(); }
     if (action === "cancel-conditions") { state.editingConditions = false; state.conditionDraft = null; renderMain(); }
     if (action === "undo-query") undoQuery();
-    if (action === "clear-query") {
+    // Breadcrumb "Explorer" and "Clear" both return to the entry card. The Albus panel and conversation stay as they are.
+    if (action === "clear-query" || action === "back-to-explorer") {
       resetExplorerQuery();
       if (!state.impactMode) { state.navCollapsed = false; updateNavigation(); }
       renderMain();

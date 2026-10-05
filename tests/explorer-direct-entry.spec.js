@@ -264,3 +264,22 @@ test("entry helper text points to Albus when the panel is open before any query"
   await expect(askBar(page)).toHaveCount(0);
   await expect(page.locator(".starter-card")).toContainText("Type your question in Albus →, or pick a starting point above.");
 });
+
+test("breadcrumb: Explorer links back to the entry card from results; CoolCorp goes to Workspaces", async ({ page }) => {
+  await openExplorer(page);
+  const crumbs = page.locator(".explorer-header .breadcrumbs");
+  // On the entry card, Explorer is the current page (not a link).
+  await expect(crumbs.locator('[aria-current="page"]')).toHaveText("Explorer");
+  await expect(crumbs.getByRole("button", { name: "Explorer" })).toHaveCount(0);
+
+  await askExplorer(page, "Drifted workspaces");
+  await expect(crumbs.locator('[aria-current="page"]')).toHaveText("Drifted workspaces");
+  await crumbs.getByRole("button", { name: "Explorer" }).click();
+
+  await expect(page.locator(".starter-card")).toBeVisible();
+  await expect(askBar(page)).toBeVisible();
+  await expect(page.locator('.side-nav button[data-nav-item="workspaces"]')).toBeVisible();
+
+  await crumbs.getByRole("button", { name: "CoolCorp" }).click();
+  await expect(page.locator(".standard-page h1")).toHaveText("Workspaces");
+});

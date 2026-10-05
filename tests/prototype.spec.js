@@ -74,6 +74,19 @@ test("tier 1 from the run: Explorer opens as a table with chips and a one-line r
   await expect(conversation(page)).toContainText("Five other workspaces");
 });
 
+test("breadcrumb back to Explorer keeps Albus open with the run conversation", async ({ page }) => {
+  await openRunInExplorer(page);
+  await page.locator(".explorer-header .breadcrumbs").getByRole("button", { name: "Explorer" }).click();
+
+  await expect(page.locator(".starter-card")).toBeVisible();
+  await expect(advisor(page)).toHaveClass(/is-open/);
+  await expect(conversation(page)).toContainText("Five other workspaces");
+  await expect(page.locator(".starter-card")).toContainText("Type your question in Albus →");
+
+  await page.getByRole("button", { name: "Back to run" }).click();
+  await expect(page.locator(".run-page")).toBeVisible();
+});
+
 test("tier 2 → tier 3 → graph → save → export (demo flow §5)", async ({ page }) => {
   await openRunInExplorer(page);
 
