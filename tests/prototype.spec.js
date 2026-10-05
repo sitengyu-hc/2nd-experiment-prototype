@@ -78,10 +78,10 @@ test("breadcrumb back to Explorer keeps Albus open with the run conversation", a
   await openRunInExplorer(page);
   await page.locator(".explorer-header .breadcrumbs").getByRole("button", { name: "Explorer" }).click();
 
-  await expect(page.locator(".starter-card")).toBeVisible();
+  await expect(page.locator(".explorer-hud")).toBeVisible();
   await expect(advisor(page)).toHaveClass(/is-open/);
   await expect(conversation(page)).toContainText("Five other workspaces");
-  await expect(page.locator(".starter-card")).toContainText("Type your question in Albus →");
+  await expect(page.locator(".explorer-hud")).toContainText("Type your question in Albus →");
 
   await page.getByRole("button", { name: "Back to run" }).click();
   await expect(page.locator(".run-page")).toBeVisible();
@@ -155,7 +155,7 @@ test("tier 2 → tier 3 → graph → save → export (demo flow §5)", async ({
   expect((await download).suggestedFilename()).toBe("rds-version-lifecycle.csv");
 });
 
-test("table rows have no click affordance; graph selection survives Table/Graph changes", async ({ page }) => {
+test("table rows have no hover affordance; graph selection shows in the Albus list and survives Table/Graph", async ({ page }) => {
   await page.goto("/");
   await page.locator('button[data-nav="explorer"]').click();
   await page.locator("#explorer-ask-input").fill("Drifted workspaces");
@@ -167,12 +167,24 @@ test("table rows have no click affordance; graph selection survives Table/Graph 
 
   await page.getByRole("button", { name: "Graph" }).click();
   await page.locator('[data-graph-node="payments-prod-eu"]').click();
-  await expect(page.locator(".node-detail")).toContainText("payments-prod-eu");
+  await expect(conversation(page).locator(".node-row.is-open")).toContainText("payments-prod-eu");
   await expect(page.locator(".active-query")).toContainText("Drifted is true");
 
   await page.getByRole("button", { name: "Table" }).click();
+  await expect(row).toHaveClass(/is-selected/);
   await page.getByRole("button", { name: "Graph" }).click();
-  await expect(page.locator(".node-detail")).toContainText("payments-prod-eu");
+  await expect(page.locator('[data-graph-node="payments-prod-eu"]')).toHaveClass(/is-focused/);
+});
+
+test("run → Explorer graph: RETURNED NODES lists the module and its consumers (design 03)", async ({ page }) => {
+  await openRunInExplorer(page);
+  await page.getByRole("button", { name: "Graph" }).click();
+  await expect(conversation(page).locator(".node-row")).toHaveCount(6);
+  await page.locator('[data-action="select-module"]').click();
+  const open = conversation(page).locator(".node-row.is-open");
+  await expect(open).toContainText("labels/aws");
+  await expect(open).toContainText("No-code module");
+  await expect(conversation(page)).toContainText("Five other workspaces");
 });
 
 test("new session resets Explorer query, selection, and messages", async ({ page }) => {
@@ -180,7 +192,7 @@ test("new session resets Explorer query, selection, and messages", async ({ page
   await page.getByRole("button", { name: "New session" }).click();
 
   await expect(page.locator(".results-panel")).toHaveCount(0);
-  await expect(page.locator(".starter-card")).toBeVisible();
+  await expect(page.locator(".explorer-hud")).toBeVisible();
   await expect(conversation(page)).not.toContainText("Five other workspaces");
   await expect(conversation(page)).not.toContainText("Built query");
 });

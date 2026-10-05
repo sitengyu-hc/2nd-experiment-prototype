@@ -79,11 +79,21 @@ window.PROTOTYPE_DATA = {
   ],
   // Starting points shown under the "Ask Albus or filter…" bar. `albus: true` = answered by Albus joining other sources.
   explorerStarters: [
-    { text: "Drifted workspaces" },
     { text: "View all modules" },
-    { text: "View all providers" },
-    { text: "Which RDS module versions are no longer in use?", albus: true }
+    { text: "View all providers" }
   ],
+  // What Albus says about each query's results (shown above RETURNED NODES in the Albus panel).
+  // Row links select the row in the list and the table/graph.
+  resultSummaries: {
+    "Drifted workspaces": `<p>This table lists workspaces where the infrastructure currently differs from the Terraform configuration or state recorded by HCP Terraform. The timestamp shows when drift was detected, not necessarily when the underlying change was made.</p><p>I recommend starting with ${row("payments-prod-eu")} because it is a production workspace with the most recent drift detection.</p><p>The results don't yet show whether the drift came from a manual cloud-console change, a state mismatch, or a configuration change. Open a workspace to review the affected resources.</p>`,
+    "View all modules": `<p>These are the modules used by at least one workspace in CoolCorp. ${row("terraform-aws-rds")} is the most widely used, at v5.1.0 across three payments workspaces.</p><p>Open a module to see which workspaces use it and at which version.</p>`,
+    "View all providers": `<p>These are the providers used across CoolCorp workspaces. ${row("hashicorp/aws")} is used by the most workspaces; three provider versions need review.</p><p>Open a provider to see its version and the workspaces that use it.</p>`,
+    "How many EC2 instances exist across my organization?": `<p>CoolCorp has 47 EC2 instances across 14 workspaces. Most production instances run in us-east-1.</p>`,
+    "Which workspaces use AWS provider version 5.x?": `<p>18 workspaces use AWS provider 5.x, from v5.61.0 to v5.82.2. ${row("infra-baseline-qa")} is on the oldest 5.x version.</p>`,
+    "What resources depend on workspace X?": `<p>7 resources consume remote-state outputs from workspace X, mostly network IDs and security groups. Review them before changing those outputs.</p>`,
+    "Production workspaces": `<p>These are the workspaces tagged production across three projects. ${row("payments-prod-us")} has the most resources and a planned run waiting.</p>`,
+    [RDS_CONSUMERS]: `<p>Five workspaces use terraform-aws-rds at v5.1.0; two are production (${row("payments-prod-eu")} and ${row("payments-prod-us")}), so the same <code>db_name</code> replacement risk may appear when they run next.</p>`
+  },
   // Explorer query model, mirroring HCP Terraform Explorer (atlas app/lib/workspace-explorer.js):
   // pick an object type, then WHERE <column> <operator> <value> AND ... Operators depend on the column type.
   explorerSchema: {

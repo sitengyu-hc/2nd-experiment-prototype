@@ -32,6 +32,7 @@
     queryConditions: [],
     queryAlbus: null,
     refinements: [], // ids of data.refinements applied to the current query
+    nodeSearch: "", // filter text for the RETURNED NODES list in the Albus panel
     conditionDraft: null,
     editingConditions: false,
     queryHistory: [],
@@ -211,6 +212,11 @@
 
   function explorerView() {
     const info = queryInfo(state.explorerQuery);
+    if (!info) {
+      return `<div class="explorer-page explorer-entry">${entryHud()}
+      ${state.modal === "saved-views" ? savedViewsModal() : ""}
+    </div>`;
+    }
     return `<div class="explorer-page table-first">
       <header class="explorer-header">
         <nav class="breadcrumbs" aria-label="Breadcrumb"><button type="button" class="text-link" data-nav="workspaces">CoolCorp</button>　/　${info ? `<button type="button" class="text-link" data-action="back-to-explorer">Explorer</button>　/　<strong aria-current="page">${escapeHtml(info.title)}</strong>` : '<strong aria-current="page">Explorer</strong>'}</nav>
@@ -220,7 +226,7 @@
       ${state.editingConditions && info ? conditionsEditor() : ""}
       ${info && !state.advisorOpen && state.receipt ? `<div class="query-receipt" role="status"><span class="ask-spark">✦</span><span><strong>${escapeHtml(state.receipt.label)}:</strong> ${escapeHtml(state.receipt.text)}</span>${state.receipt.applied ? appliedActions() : '<div class="card-actions"><button type="button" data-action="edit-conditions">Edit conditions</button></div>'}</div>` : ""}
       ${info && !state.advisorOpen && !state.editingConditions ? askBar("Refine these results or ask a question…") : ""}
-      <section class="explorer-results">${info ? resultsView(info) : starterView()}</section>
+      <section class="explorer-results">${resultsView(info)}</section>
       ${state.modal === "saved-views" ? savedViewsModal() : ""}
       ${state.modal === "save-view" ? saveViewModal() : ""}
     </div>`;
@@ -318,28 +324,35 @@
     return `<div class="browse-menu"><div><span>TYPES</span><button>Workspaces</button><button>Policy Sets</button><button data-prompt="View all modules">Modules</button><button data-prompt="View all providers">Providers</button><button>Resources</button><button>Terraform Versions</button><button data-action="saved-views">Saved views <strong>${20 + state.savedViews.length}</strong></button></div><div><span>PRE-DEFINED VIEWS</span><button>View All Workspaces</button><button>Organized by Project</button><button>Organized by Status</button><button>Workspaces with failed checks</button><button data-prompt="Drifted workspaces">Drifted Workspaces</button><button>Latest updated workspaces</button></div></div>`;
   }
 
-  // Entry HUD: Explorer's own starting points on top; everything Albus (what it does, an example
-  // question, and the search field) grouped at the bottom.
-  function starterView() {
-    const starterButton = starter => `<button type="button" class="${starter.albus ? "albus" : ""}" data-prompt="${escapeAttr(starter.text)}"><span>${starter.albus ? "✦ " : ""}${escapeHtml(starter.text)}</span><b>→</b></button>`;
-    const explorerStarters = data.explorerStarters.filter(starter => !starter.albus);
-    const albusStarters = data.explorerStarters.filter(starter => starter.albus);
-    return `<div class="explorer-starter"><div class="starter-card">
-      <strong>Pick a starting point or ask a question.</strong>
+  const viewIcons = {
+    graph: '<svg class="hud-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="4" cy="8" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="12" cy="12" r="2"/><path d="M5.8 7.1 10.2 4.9M5.8 8.9l4.4 2.2"/></svg>',
+    table: '<svg class="hud-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 6.5h12M6 6.5V13"/></svg>',
+    search: '<svg class="hud-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>'
+  };
+
+  // Entry heads-up display, as in Experiment 2 (design-assets/explorer-oct-5): view mode, browse,
+  // a plain natural-language box, and two starting points. No Albus-specific wording; routing happens behind the box.
+  function entryHud() {
+    const toggle = mode => `<button type="button" data-display="${mode}" class="${state.explorerDisplay === mode ? "active" : ""}" aria-pressed="${state.explorerDisplay === mode}">${viewIcons[mode]}${mode === "graph" ? "Graph" : "Table View"}</button>`;
+    const queryBox = state.advisorOpen
+      ? '<p class="ask-hint">Type your question in Albus →, or pick a starting point below.</p>'
+      : `<form id="explorer-ask-form" class="hud-query"><label class="hud-input">${viewIcons.search}<input id="explorer-ask-input" type="text" autocomplete="off" placeholder="Ex. production workspaces using AWS vx.x.x" aria-label="Enter a natural language query"></label><button type="submit">Search</button></form>`;
+    return `<section class="explorer-hud" aria-label="Explorer">
+      <nav class="breadcrumbs" aria-label="Breadcrumb"><button type="button" class="text-link" data-nav="workspaces">CoolCorp</button>　/　Explorer　/　<strong aria-current="page">Types</strong></nav>
+      <h1>${icon("explorer")} Explorer</h1>
+      <p class="hud-lede">Explore your data to analyze your organization's Terraform usage.</p>
+      <label class="field-label">VIEW MODE</label>
+      <div class="hud-toggle" role="group" aria-label="View mode">${toggle("graph")}${toggle("table")}</div>
       <label class="field-label">BROWSE</label>${browseControl()}
-      <label class="field-label">EXPLORE YOUR INFRASTRUCTURE</label><div class="starter-prompts">${explorerStarters.map(starterButton).join("")}</div>
-      <div class="albus-group">
-        <label class="field-label" for="explorer-ask-input">SEARCH OR ASK A QUESTION</label>
-        <p class="albus-group-note">Albus turns questions into Explorer queries you can see and edit. Albus can also combine Explorer with your registry and run history, and always shows which sources it used.</p>
-        <div class="starter-prompts albus-starters">${albusStarters.map(starterButton).join("")}</div>
-        ${state.advisorOpen ? '<p class="ask-hint">Type your question in Albus →, or pick a starting point above.</p>' : askBar("e.g. drifted production workspaces, or unused module versions")}
-      </div>
-    </div></div>`;
+      <label class="field-label" for="explorer-ask-input">ENTER A NATURAL LANGUAGE QUERY</label>${queryBox}
+      <label class="field-label">EXPLORE YOUR INFRASTRUCTURE</label>
+      <div class="hud-prompts">${data.explorerStarters.map(starter => `<button type="button" data-prompt="${escapeAttr(starter.text)}">${escapeHtml(starter.text)}<span aria-hidden="true">↵</span></button>`).join("")}</div>
+    </section>`;
   }
 
   function resultsView(info) {
     if (state.explorerDisplay === "graph" && !info.derived) {
-      return `<div class="explorer-canvas">${graphFor(info)}${nodeDetailCard()}</div>`;
+      return `<div class="explorer-canvas">${graphFor(info)}${state.advisorOpen ? "" : nodeDetailCard()}</div>`;
     }
     const savedNote = state.lastSaved ? `<span class="saved-note">Saved as “${escapeHtml(state.lastSaved)}”</span>` : "";
     return `<div class="results-panel ${info.derived ? "is-derived" : ""}">
@@ -359,7 +372,7 @@
   }
 
   // Rows aren't clickable (no hover affordance); Albus row links highlight them.
-  const rowClass = key => (state.highlightedRows.includes(key) ? "is-highlighted" : "");
+  const rowClass = key => [state.highlightedRows.includes(key) ? "is-highlighted" : "", state.selectedNode === key ? "is-selected" : ""].join(" ").trim();
 
   function derivedTable() {
     const { rows, provenance } = data.rdsVersions;
@@ -505,7 +518,9 @@
     state.explorerQuery = key;
     loadQuery(key);
     state.refinements = [];
-    state.explorerDisplay = options.display || "table";
+    state.nodeSearch = "";
+    // New queries keep the chosen view mode (entry HUD or Table/Graph toggle) unless the answer asks for one.
+    state.explorerDisplay = options.display || state.explorerDisplay || "table";
     state.highlightedRows = [];
     state.selectedNode = null;
     state.editingConditions = false;
@@ -537,6 +552,7 @@
     state.queryConditions = [];
     state.queryAlbus = null;
     state.refinements = [];
+    state.nodeSearch = "";
     state.conditionDraft = null;
     state.queryHistory = [];
     state.highlightedRows = [];
@@ -671,6 +687,8 @@
       const refinement = findRefinement(question);
       if (refinement) addRefinement(refinement);
       setReceipt(label, receiptText(), true);
+      // Running a query opens Albus with a summary and the RETURNED NODES list (table and graph).
+      if (!state.advisorOpen) { openAdvisor(); return; }
       // Tier 1 only updates the table; the panel stays as it was (closed on direct entry).
     } else if (response.tier === 2 || response.tier === 3) {
       const changesQuery = response.query && response.query !== state.explorerQuery;
@@ -701,6 +719,88 @@
     if (!state.advisorOpen) openAdvisor();
   }
 
+  // ---------------------------------------------------------------------------
+  // Albus panel: what the current results are, plus the RETURNED NODES list (designs 02-04)
+  // ---------------------------------------------------------------------------
+
+  function workspaceDetails(node) {
+    const production = /prod/.test(node.name) || node.environment === "production";
+    return [
+      ["Project name", node.environment && node.environment !== "production" ? node.environment : production ? "production" : "platform"],
+      ["Current run ID", `run-${node.name.replace(/[^a-z]/g, "").slice(0, 6)}2nLvYw`],
+      ["Run status", node.runStatus || (node.alert ? "drifted" : "applied")],
+      ["Current run applied", "Mar 12, 2025 11:22:05 am"],
+      ["VCS repo", `example1/${node.name}`],
+      ["Terraform version", "1.8.5"],
+      ["Drifted", node.alert ? "true" : "false"],
+      ["Resource count", String(node.resources || 34)],
+      ...(node.detail ? [["Details", node.detail]] : [])
+    ];
+  }
+
+  function panelRows(info) {
+    if (info.derived) {
+      return data.rdsVersions.rows.map(item => ({
+        key: item.version, name: item.version, kind: "module", alert: item.status !== "published",
+        details: [["Workspaces (Explorer)", `${item.workspaces}${item.detail ? ` · ${item.detail}` : ""}`], ["✦ Registry status", item.registryStatus], ["✦ Last used", item.lastUsed], ["✦ Note", item.note]]
+      }));
+    }
+    if (info.key === RDS_CONSUMERS) {
+      const module = { key: "labels/aws", name: "labels/aws", kind: "module", details: [["Project name", "platform"], ["Current run ID", "run-Ax7mKPqZ2nLvYw"], ["Run status", "applied"], ["VCS repo", "example1/labels-aws"], ["No-code module", "no-code-module-3"], ["Module count", "12"], ["Providers", "registry.terraform.io/hashicorp/aws"], ["Terraform version", "1.3.0"], ["Drifted", "false"], ["Resource count", "21"]] };
+      return [module, ...visibleRows(RDS_CONSUMERS).map(node => ({ key: node.name, name: node.name, kind: "workspace", alert: node.environment === "production", details: [["Environment", node.environment], ...workspaceDetails(node).filter(([term]) => term !== "Project name"), ["Module", "terraform-aws-rds v5.1.0"]] }))];
+    }
+    const { result } = info;
+    if (["module", "provider"].includes(result.type)) {
+      const entities = result.nodes.map(node => ({
+        key: node.name, name: node.name, kind: result.type,
+        details: [["Type", result.type], ["Version", node.detail], ["Workspace count", String(node.workspaces.length)], ["Workspaces", node.workspaces.join(", ")], ["Source", result.type === "module" ? `app.terraform.io/CoolCorp/${node.name}` : `registry.terraform.io/${node.name}`]]
+      }));
+      const workspaces = [...new Set(result.nodes.flatMap(node => node.workspaces))].map(name => ({
+        key: name, name, kind: "workspace",
+        details: workspaceDetails({ name, detail: result.nodes.filter(node => node.workspaces.includes(name)).map(node => `${node.name} ${node.detail}`).join(", ") })
+      }));
+      return [...entities, ...workspaces];
+    }
+    return result.nodes.map(node => ({
+      key: node.name, name: node.name, kind: result.type, alert: node.alert,
+      details: result.type === "workspace" ? workspaceDetails(node) : [["Type", result.type], ["Details", node.detail]]
+    }));
+  }
+
+  function resultsSection() {
+    const info = queryInfo(state.explorerQuery);
+    if (!info) return "";
+    const rows = panelRows(info);
+    // The run journey and Albus cards already explain these results; other queries get a short summary.
+    const summary = info.derived || (info.key === RDS_CONSUMERS && state.impactMode) ? "" : data.resultSummaries[info.key] || "";
+    const search = state.nodeSearch.toLowerCase();
+    const total = info.result && info.result.nodes.length < info.count ? `${rows.length} shown · ${info.count} ${info.unit} in Explorer` : `1–${rows.length} of ${rows.length}`;
+    const rowHtml = item => {
+      const open = state.selectedNode === item.key;
+      const hidden = search && !item.name.toLowerCase().includes(search) ? "hidden" : "";
+      return `<div class="node-row ${open ? "is-open" : ""} ${state.highlightedRows.includes(item.key) ? "is-highlighted" : ""}" data-node-name="${escapeAttr(item.name.toLowerCase())}" ${hidden}><button type="button" class="node-row-toggle" data-node-row="${escapeAttr(item.key)}" aria-expanded="${open}"><span class="node-chevron" aria-hidden="true">›</span><i class="node-icon kind-${item.kind}" aria-hidden="true"></i><span class="node-name">${escapeHtml(item.name)}</span>${open ? '<span class="node-hide">HIDE INFORMATION</span>' : item.alert ? '<small class="node-alert" title="Needs review">!</small>' : ""}</button>${open ? `<dl class="node-row-details">${item.details.map(([term, value]) => `<div><dt>${escapeHtml(term)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>` : ""}</div>`;
+    };
+    return `<section class="results-section" aria-label="Query results">
+      ${summary ? `<article class="message advisor-message results-summary">${summary}</article>` : ""}
+      <div class="results-heading"><span>RETURNED NODES</span><strong>${rows.length}</strong></div>
+      <label class="node-filter">${viewIcons.search}<input id="node-search" type="search" placeholder="Search nodes" aria-label="Search nodes" value="${escapeAttr(state.nodeSearch)}"></label>
+      <div class="node-list">${rows.map(rowHtml).join("")}</div>
+      <div class="node-pagination"><span>${total}</span><span aria-hidden="true">‹　1 / 1　›</span></div>
+    </section>`;
+  }
+
+  function selectNode(key) {
+    state.selectedNode = state.selectedNode === key ? null : key;
+    renderMain();
+    renderConversation();
+    if (state.selectedNode) {
+      requestAnimationFrame(() => {
+        main.querySelector(`[data-row-key="${CSS.escape(key)}"], [data-graph-node="${CSS.escape(key)}"]`)?.scrollIntoView({ block: "nearest" });
+        conversation.querySelector(`[data-node-row="${CSS.escape(key)}"]`)?.scrollIntoView({ block: "nearest" });
+      });
+    }
+  }
+
   function renderConversation() {
     const inExplorer = state.view === "explorer";
     const latestApplied = latestAppliedMessage();
@@ -717,11 +817,11 @@
         : message.html;
       const hasUserQuestion = state.messages.slice(0, index).some(item => item.role === "user");
       return `<article class="message advisor-message">${html}${message.evidence && message.evidence.length ? `<div class="references"><span>References</span>${message.evidence.map(item => `<a href="#" data-reference>${item}</a>`).join("")}</div>` : ""}${message.feedback && hasUserQuestion ? feedbackHtml() : ""}</article>`;
-    }).join("");
+    }).join("") + (inExplorer ? resultsSection() : "");
     // Follow-ups live only here (not repeated inside answer cards); they follow the latest answer.
     const latestCard = [...state.messages].reverse().find(message => message.kind === "card" && message.nextPrompts?.length);
     const prompts = inExplorer ? (latestCard ? latestCard.nextPrompts : state.impactMode ? data.impactPrompts : data.explorerPrompts) : data.suggestedPrompts;
-    const promptLabel = inExplorer ? "Suggested questions" : "Inspect further";
+    const promptLabel = "Inspect further";
     promptMenu.innerHTML = prompts.length ? `<button id="prompt-toggle" class="prompt-toggle" type="button" aria-expanded="${state.promptsOpen}">${promptLabel} <span>${state.promptsOpen ? "⌃" : "⌄"}</span></button><div class="prompt-list" ${state.promptsOpen ? "" : "hidden"}>${prompts.map(prompt => `<button data-prompt="${escapeAttr(prompt)}">${escapeHtml(prompt)}</button>`).join("")}</div>` : "";
     requestAnimationFrame(() => {
       // Keep the latest question in view so long answer cards read from the top.
@@ -793,8 +893,9 @@
 
   function highlightRow(key) {
     state.highlightedRows = [key];
-    state.selectedNode = null;
+    state.selectedNode = key;
     renderMain();
+    renderConversation();
     requestAnimationFrame(() => {
       main.querySelector(`[data-row-key="${CSS.escape(key)}"], [data-graph-node="${CSS.escape(key)}"]`)?.scrollIntoView({ block: "nearest" });
     });
@@ -855,8 +956,8 @@
       renderConversation();
     }
     if (action === "show-blast-radius") ask("Show blast radius for v5.1.0");
-    if (action === "select-module") { state.selectedNode = "labels/aws"; renderMain(); }
-    if (action === "clear-node") { state.selectedNode = null; renderMain(); }
+    if (action === "select-module") selectNode("labels/aws");
+    if (action === "clear-node") { state.selectedNode = null; renderMain(); renderConversation(); }
     if (action === "toggle-browse") { state.browseOpen = !state.browseOpen; renderMain(); }
     if (action === "saved-views") { state.modal = "saved-views"; state.browseOpen = false; renderMain(); }
     if (action === "save-view") { state.modal = "save-view"; renderMain(); }
@@ -904,7 +1005,10 @@
     if (rowRef && state.view === "explorer") highlightRow(rowRef.dataset.rowRef);
 
     const graphNode = event.target.closest("[data-graph-node]");
-    if (graphNode) { state.selectedNode = graphNode.dataset.graphNode; renderMain(); }
+    if (graphNode) selectNode(graphNode.dataset.graphNode);
+
+    const nodeRow = event.target.closest("[data-node-row]");
+    if (nodeRow) selectNode(nodeRow.dataset.nodeRow);
 
     if (event.target.closest("#prompt-toggle")) {
       state.promptsOpen = !state.promptsOpen;
@@ -964,6 +1068,12 @@
     if (updateDraft(field.dataset.draft, Number(field.dataset.index), field.value)) renderMain();
   });
   document.addEventListener("input", event => {
+    if (event.target.id === "node-search") {
+      state.nodeSearch = event.target.value;
+      const search = state.nodeSearch.toLowerCase();
+      conversation.querySelectorAll(".node-row").forEach(row => { row.hidden = Boolean(search) && !row.dataset.nodeName.includes(search); });
+      return;
+    }
     const field = event.target.closest('input[data-draft="value"]');
     if (field && state.conditionDraft) updateDraft("value", Number(field.dataset.index), field.value);
   });
