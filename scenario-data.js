@@ -268,15 +268,25 @@ window.PROTOTYPE_DATA = {
     ]
   },
   explorerResults: {
+    // Every module/provider row is listed, so the table, graph, and Albus node list show the same set.
     "View all modules": {
-      count: 24,
+      count: 12,
       unit: "modules",
       type: "module",
-      summary: "24 modules across 38 workspaces",
+      summary: "12 modules across 12 workspaces",
       nodes: [
         { name: "terraform-aws-rds", detail: "v5.1.0", workspaces: ["payments-prod-eu", "payments-prod-us", "payments-staging"] },
         { name: "vpc-baseline", detail: "v3.4.2", workspaces: ["networking-prod", "platform-staging"] },
-        { name: "eks-cluster", detail: "v19.5.1", workspaces: ["analytics-prod", "ml-pipeline-prod"] }
+        { name: "eks-cluster", detail: "v19.5.1", workspaces: ["analytics-prod", "ml-pipeline-prod"] },
+        { name: "s3-secure-bucket", detail: "v2.1.0", workspaces: ["data-warehouse-dev", "analytics-prod", "legacy-data"] },
+        { name: "iam-role-baseline", detail: "v1.8.3", workspaces: ["security-prod", "platform-staging"] },
+        { name: "cloudwatch-alarms", detail: "v0.9.4", workspaces: ["payments-prod-eu", "payments-prod-us"] },
+        { name: "kms-key", detail: "v1.2.0", workspaces: ["security-prod", "payments-prod-eu"] },
+        { name: "alb-ingress", detail: "v4.0.1", workspaces: ["payments-prod-us", "networking-prod"] },
+        { name: "redis-cluster", detail: "v2.3.0", workspaces: ["payments-staging", "sandbox-testing"] },
+        { name: "lambda-function", detail: "v6.0.0", workspaces: ["ml-pipeline-prod", "infra-baseline-qa"] },
+        { name: "route53-zone", detail: "v1.5.2", workspaces: ["networking-prod"] },
+        { name: "sg-standard", detail: "v3.0.0", workspaces: ["sandbox-testing", "infra-baseline-qa", "data-warehouse-dev"] }
       ]
     },
     "View all providers": {
@@ -287,7 +297,16 @@ window.PROTOTYPE_DATA = {
       nodes: [
         { name: "hashicorp/aws", detail: "v5.82.2", workspaces: ["payments-prod-eu", "payments-prod-us", "networking-prod"] },
         { name: "hashicorp/kubernetes", detail: "v2.35.1", workspaces: ["analytics-prod", "ml-pipeline-prod"] },
-        { name: "hashicorp/vault", detail: "v4.5.0", workspaces: ["platform-staging", "security-prod"] }
+        { name: "hashicorp/vault", detail: "v4.5.0", workspaces: ["platform-staging", "security-prod"] },
+        { name: "hashicorp/random", detail: "v3.6.3", workspaces: ["payments-staging", "sandbox-testing"] },
+        { name: "hashicorp/tls", detail: "v4.0.6", workspaces: ["security-prod", "networking-prod"] },
+        { name: "hashicorp/google", detail: "v6.14.1", workspaces: ["data-warehouse-dev", "analytics-prod"] },
+        { name: "hashicorp/azurerm", detail: "v3.117.0", alert: true, review: "A major version behind (v4.x available)", workspaces: ["legacy-data"] },
+        { name: "hashicorp/null", detail: "v3.2.3", workspaces: ["infra-baseline-qa", "sandbox-testing"] },
+        { name: "hashicorp/helm", detail: "v2.17.0", workspaces: ["ml-pipeline-prod", "platform-staging"] },
+        { name: "datadog/datadog", detail: "v3.49.0", workspaces: ["payments-prod-eu", "analytics-prod"] },
+        { name: "hashicorp/template", detail: "v2.2.0", alert: true, review: "Deprecated provider; replace with templatefile()", workspaces: ["legacy-data", "infra-baseline-qa"] },
+        { name: "cloudflare/cloudflare", detail: "v3.35.0", alert: true, review: "A major version behind (v4.x available)", workspaces: ["networking-prod", "payments-staging"] }
       ]
     },
     "Drifted workspaces": {
@@ -508,7 +527,7 @@ window.PROTOTYPE_DATA = {
     },
     "View all modules": {
       type: "answer",
-      html: `<p>You are now viewing <strong>24 modules</strong> used across 38 workspaces.</p>`,
+      html: `<p>You are now viewing <strong>12 modules</strong> used across 12 workspaces.</p>`,
       evidence: ["Explorer module inventory"]
     },
     "Drifted workspaces": {

@@ -373,3 +373,46 @@ test("side navigation can be expanded from Explorer results to get back to Works
   await workspacesLink.click();
   await expect(page.locator(".standard-page h1")).toHaveText("Workspaces");
 });
+
+for (const [starter, unit] of [["View all modules", "modules"], ["View all providers", "providers"]]) {
+  test(`${starter}: table, graph, and Albus show the same ${unit}`, async ({ page }) => {
+    await openExplorer(page);
+    await page.locator(".hud-prompts").getByRole("button", { name: new RegExp(starter) }).click();
+
+    await expect(page.locator(".table-compact-hud .aq-count")).toHaveText(`12 ${unit}`);
+    await expect(tableRows(page)).toHaveCount(12);
+    await expect(page.locator(".table-pagination")).toHaveText("1–12 of 12");
+    await expect(latestReceipt(page)).toContainText("12 results");
+    const tableNames = await page.locator(".results-table .row-name-link").allTextContents();
+
+    await page.getByRole("button", { name: "Graph" }).click();
+    await expect(page.locator(".result-summary span")).toHaveText("12");
+    const graphNames = await page.locator(".relationship-topology .relation-entity strong").allTextContents();
+    expect(graphNames).toEqual(tableNames);
+
+    // Albus lists every entity plus each workspace drawn in the graph.
+    const workspaceCount = await page.locator(".relationship-topology .relation-workspace").count();
+    await expect(nodeRows(page)).toHaveCount(12 + workspaceCount);
+  });
+}
+
+test("expanding a returned node shows its whole detail card above the Inspect further prompts", async ({ page }) => {
+  await openExplorer(page);
+  await page.locator(".hud-prompts").getByRole("button", { name: /View all providers/ }).click();
+  const toggle = page.locator("#prompt-toggle");
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+  await expect(page.locator("#prompt-menu .prompt-list")).toBeVisible();
+
+  // The last node starts below the fold.
+  await nodeRows(page).last().locator(".node-row-toggle").click();
+  const open = page.locator("#conversation .node-row.is-open");
+  await expect(open.locator(".node-row-details")).toBeVisible();
+  await expect(page.locator("#prompt-menu .prompt-list")).toBeHidden();
+
+  await expect(async () => {
+    const card = await open.boundingBox();
+    const view = await page.locator("#conversation").boundingBox();
+    expect(card.y).toBeGreaterThanOrEqual(view.y);
+    expect(card.y + card.height).toBeLessThanOrEqual(view.y + view.height);
+  }).toPass();
+});

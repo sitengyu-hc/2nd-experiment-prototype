@@ -590,6 +590,7 @@ td.albus-cell { background: #fcfbff; }
 .explorer-canvas .result-summary { right: 18px !important; }
 .explorer-canvas .node-detail { top: auto; bottom: 64px; right: 16px; }
 .explorer-canvas .graph-node i { right: 30px; background: #f59e0b; }
+.explorer-canvas .relationship-topology .graph-node i { left: calc(50% + 8px); right: auto; }
 .explorer-canvas .graph-node.is-focused .node-symbol { background: #f97316 !important; box-shadow: 0 0 0 6px #f9731633, 0 0 0 2px #fff; }
 .explorer-canvas .module-node { cursor: pointer !important; }
 

@@ -408,7 +408,7 @@
 
   // Rows themselves aren't clickable; the name link selects the row (and opens it in Albus's RETURNED NODES).
   const rowClass = key => [state.highlightedRows.includes(key) ? "is-highlighted" : "", state.selectedNode === key ? "is-selected" : ""].join(" ").trim();
-  const nameLink = (key, label, alert) => `<button type="button" class="row-name-link" data-node-row="${escapeAttr(key)}">${escapeHtml(label)}</button>${alert ? ' <span class="risk-node" title="Needs review">!</span>' : ""}`;
+  const nameLink = (key, label, alert, review) => `<button type="button" class="row-name-link" data-node-row="${escapeAttr(key)}">${escapeHtml(label)}</button>${alert ? ` <span class="risk-node" title="${escapeAttr(review || "Needs review")}">!</span>` : ""}`;
 
   // Column definitions per result type, so "View columns" can hide any but the name.
   function tableSpec(info) {
@@ -443,7 +443,7 @@
     const { result } = info;
     const footer = `${result.nodes.length ? `1–${result.nodes.length}` : 0} of ${result.count}`;
     const rows = result.nodes.map(node => ({ key: node.name, node }));
-    const name = { id: "name", label: "Name", locked: true, cell: ({ node }) => nameLink(node.name, node.name, node.alert) };
+    const name = { id: "name", label: "Name", locked: true, cell: ({ node }) => nameLink(node.name, node.name, node.alert, node.review) };
     if (["module", "provider"].includes(result.type)) {
       return { rows, footer, columns: [name,
         { id: "version", label: "Version", cell: ({ node }) => escapeHtml(node.detail) },
@@ -506,10 +506,26 @@
     return `<div class="topology inventory-topology type-${result.type}" aria-label="${escapeAttr(state.explorerQuery)}"><div class="result-summary"><span>${result.count}</span><strong>${escapeHtml(result.summary)}</strong></div>${result.nodes.map((node, index) => `<button class="graph-node result-${result.type} ${isFocused(node.name) ? "is-focused" : ""}" style="left:${positions[index][0]}%;top:${positions[index][1]}%" data-graph-node="${escapeAttr(node.name)}"><span class="node-symbol">${symbol}</span>${node.alert ? "<i>!</i>" : ""}<strong>${escapeHtml(node.name)}</strong><small>${escapeHtml(node.detail)}</small></button>`).join("")}<div class="force-tools"><span>Force</span><button type="button" aria-label="Previous layout">‹</button><button type="button" aria-label="Next layout">›</button></div><div class="legend"><span><i class="result-key"></i> ${result.type}</span><span><i class="selected-key"></i> selected</span></div></div>`;
   }
 
+  // Lays out `count` nodes in columns of up to 6, spread across the given x positions (in %).
+  function columnLayout(count, xs) {
+    const perColumn = Math.max(Math.ceil(count / xs.length), Math.min(count, 6));
+    const columns = Math.ceil(count / perColumn);
+    const x = columns === 1 ? [xs[Math.floor((xs.length - 1) / 2)]] : xs.slice(xs.length - columns);
+    return Array.from({ length: count }, (_, index) => {
+      const column = Math.floor(index / perColumn);
+      const row = index % perColumn;
+      const rows = Math.min(perColumn, count - column * perColumn);
+      // Rows stay between ~20% and ~84% so they clear the summary badge (top) and legend (bottom) on short screens.
+      const step = rows > 1 ? Math.min(13, 64 / (rows - 1)) : 0;
+      return [x[column], 52 - (step * (rows - 1)) / 2 + row * step];
+    });
+  }
+
+  // Every result row is drawn (entities on the left, their workspaces on the right), so the graph matches the table.
   function relationshipResultsCanvas(result) {
-    const entityPositions = [[48, 30], [48, 50], [48, 70]]; // right of the floating HUD
+    const entityPositions = columnLayout(result.nodes.length, [12, 33]);
     const workspaceNames = [...new Set(result.nodes.flatMap(node => node.workspaces))];
-    const workspacePositions = workspaceNames.map((_, index) => [76, 16 + index * (68 / Math.max(workspaceNames.length - 1, 1))]);
+    const workspacePositions = columnLayout(workspaceNames.length, [67, 88]);
     const workspacePosition = Object.fromEntries(workspaceNames.map((name, index) => [name, workspacePositions[index]]));
     const lines = result.nodes.flatMap((node, nodeIndex) => node.workspaces.map(name => {
       const [x1, y1] = entityPositions[nodeIndex];
@@ -517,7 +533,7 @@
       return `<line x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%"/>`;
     })).join("");
     const symbol = result.type === "module" ? "▱" : "⬡";
-    return `<div class="topology relationship-topology type-${result.type}" aria-label="${escapeAttr(state.explorerQuery)}"><div class="result-summary"><span>${result.count}</span><strong>${escapeHtml(result.summary)}</strong></div><svg class="relationship-edges" aria-hidden="true">${lines}</svg>${result.nodes.map((node, index) => `<button class="graph-node relation-entity result-${result.type} ${isFocused(node.name) ? "is-focused" : ""}" style="left:${entityPositions[index][0]}%;top:${entityPositions[index][1]}%" data-graph-node="${node.name}"><span class="node-symbol">${symbol}</span><strong>${node.name}</strong><small>${node.detail}</small></button>`).join("")}${workspaceNames.map(name => `<button class="graph-node relation-workspace ${isFocused(name) ? "is-focused" : ""}" style="left:${workspacePosition[name][0]}%;top:${workspacePosition[name][1]}%" data-graph-node="${name}"><span class="node-symbol">▤</span><strong>${name}</strong><small>workspace</small></button>`).join("")}<div class="force-tools"><span>Force</span><button type="button" aria-label="Previous layout">‹</button><button type="button" aria-label="Next layout">›</button></div><div class="legend"><span><i class="result-key"></i> ${result.type}</span><span><i class="workspace-key"></i> workspace</span><span><i class="selected-key"></i> selected</span></div></div>`;
+    return `<div class="topology relationship-topology type-${result.type}" aria-label="${escapeAttr(state.explorerQuery)}"><div class="result-summary"><span>${result.count}</span><strong>${escapeHtml(result.summary)}</strong></div><svg class="relationship-edges" aria-hidden="true">${lines}</svg>${result.nodes.map((node, index) => `<button class="graph-node relation-entity result-${result.type} ${isFocused(node.name) ? "is-focused" : ""}" style="left:${entityPositions[index][0]}%;top:${entityPositions[index][1]}%" data-graph-node="${escapeAttr(node.name)}"><span class="node-symbol">${symbol}</span>${node.alert ? `<i title="${escapeAttr(node.review || "Needs review")}">!</i>` : ""}<strong>${escapeHtml(node.name)}</strong><small>${escapeHtml(node.detail)}</small></button>`).join("")}${workspaceNames.map(name => `<button class="graph-node relation-workspace ${isFocused(name) ? "is-focused" : ""}" style="left:${workspacePosition[name][0]}%;top:${workspacePosition[name][1]}%" data-graph-node="${escapeAttr(name)}"><span class="node-symbol">▤</span><strong>${escapeHtml(name)}</strong><small>workspace</small></button>`).join("")}<div class="force-tools"><span>Force</span><button type="button" aria-label="Previous layout">‹</button><button type="button" aria-label="Next layout">›</button></div><div class="legend"><span><i class="result-key"></i> ${result.type}</span><span><i class="workspace-key"></i> workspace</span><span><i class="selected-key"></i> selected</span></div></div>`;
   }
 
   function nodeDetailCard() {
@@ -836,8 +852,8 @@
     const { result } = info;
     if (["module", "provider"].includes(result.type)) {
       const entities = result.nodes.map(node => ({
-        key: node.name, name: node.name, kind: result.type,
-        details: [["Type", result.type], ["Version", node.detail], ["Workspace count", String(node.workspaces.length)], ["Workspaces", node.workspaces.join(", ")], ["Source", result.type === "module" ? `app.terraform.io/CoolCorp/${node.name}` : `registry.terraform.io/${node.name}`]]
+        key: node.name, name: node.name, kind: result.type, alert: node.alert,
+        details: [["Type", result.type], ["Version", node.detail], ...(node.review ? [["Needs review", node.review]] : []), ["Workspace count", String(node.workspaces.length)], ["Workspaces", node.workspaces.join(", ")], ["Source", result.type === "module" ? `app.terraform.io/CoolCorp/${node.name}` : `registry.terraform.io/${node.name}`]]
       }));
       const workspaces = [...new Set(result.nodes.flatMap(node => node.workspaces))].map(name => ({
         key: name, name, kind: "workspace",
@@ -875,14 +891,27 @@
 
   function selectNode(key) {
     state.selectedNode = state.selectedNode === key ? null : key;
+    // Opening a node collapses "Inspect further" so the prompts don't cover its details.
+    if (state.selectedNode) state.promptsOpen = false;
     renderMain();
     renderConversation();
     if (state.selectedNode) {
       requestAnimationFrame(() => {
         main.querySelector(`[data-row-key="${CSS.escape(key)}"], [data-graph-node="${CSS.escape(key)}"]`)?.scrollIntoView({ block: "nearest" });
-        conversation.querySelector(`[data-node-row="${CSS.escape(key)}"]`)?.scrollIntoView({ block: "nearest" });
+        revealOpenNode();
       });
     }
+  }
+
+  // Scrolls the conversation so the whole expanded node card is visible (its header wins if it's taller than the panel).
+  function revealOpenNode() {
+    const row = conversation.querySelector(".node-row.is-open");
+    if (!row) return;
+    const view = conversation.getBoundingClientRect();
+    const box = row.getBoundingClientRect();
+    const pad = 12;
+    if (box.bottom > view.bottom - pad) conversation.scrollTop += Math.min(box.bottom - view.bottom + pad, box.top - view.top - pad);
+    else if (box.top < view.top + pad) conversation.scrollTop -= view.top + pad - box.top;
   }
 
   function renderConversation() {
@@ -1104,7 +1133,12 @@
 
     const nodeRow = event.target.closest("[data-node-row]");
     if (nodeRow) {
-      if (!state.advisorOpen && main.contains(nodeRow)) { state.selectedNode = nodeRow.dataset.nodeRow; openAdvisor(); }
+      if (!state.advisorOpen && main.contains(nodeRow)) {
+        state.selectedNode = nodeRow.dataset.nodeRow;
+        state.promptsOpen = false;
+        openAdvisor();
+        requestAnimationFrame(revealOpenNode);
+      }
       else selectNode(nodeRow.dataset.nodeRow);
     }
 
