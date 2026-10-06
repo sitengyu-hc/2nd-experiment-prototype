@@ -311,7 +311,7 @@ tr.clickable:hover { background: #f1f6ff; }
 .explorer-impact .explorer-controls > h1,
 .explorer-impact .explorer-controls > p { display: none; }
 .explorer-impact .hud-hide { top: 15px; right: 16px; color: #151519; }
-.explorer-impact .compact-query { margin: 22px 0 0; padding: 16px; border: 1.5px solid #1060ff; border-radius: 18px; background: #edf4ff; }
+.explorer-impact .compact-query { margin: 22px 0 0; padding: 16px; border: 1.5px solid #1060ff; border-radius: 18px; background: #fff; }
 .explorer-impact .compact-query > span { font-size: 11px; }
 .explorer-impact .compact-query strong { font-size: 16px; line-height: 1.35; }
 .explorer-impact .compact-query small { color: #151519; font-size: 13px; }
