@@ -434,7 +434,7 @@
         footer: `1–${rows.length} of ${rows.length}`,
         columns: [
           { id: "name", label: "Workspace", locked: true, cell: ({ node }) => nameLink(node.name, node.name) },
-          { id: "environment", label: "Environment", cell: ({ node }) => node.environment === "production" ? '<span class="status-pill breaking">production</span>' : node.environment },
+          { id: "environment", label: "Tag", cell: ({ node }) => node.environment === "production" ? '<span class="status-pill breaking">production</span>' : node.environment },
           { id: "runStatus", label: "Current run", cell: ({ node }) => node.runStatus },
           { id: "module", label: "Module", cell: () => "terraform-aws-rds v5.1.0" }
         ]
@@ -548,7 +548,7 @@
       type = "MODULE";
       details = [["Version", "v1.3.0"], ["Consumers", String(consumers().length)], ["Source", "app.terraform.io/CoolCorp/labels-aws"], ["Last updated", "Mar 12 2025"]];
     } else if (workspace) {
-      details = [["Environment", workspace.environment], ["Run status", workspace.runStatus], ["Resources", String(workspace.resources)], ["Module", "terraform-aws-rds v5.1.0"]];
+      details = [["Tag", workspace.environment], ["Run status", workspace.runStatus], ["Resources", String(workspace.resources)], ["Module", "terraform-aws-rds v5.1.0"]];
     } else if (resultNode) {
       type = (resultNode.workspaces ? result.type : result.type === "resource" ? "resource" : "workspace").toUpperCase();
       details = [["Details", resultNode.detail], ...(resultNode.workspaces ? [["Workspaces", resultNode.workspaces.join(", ")]] : [])];
@@ -580,7 +580,7 @@
     if (state.explorerQuery === RDS_VERSIONS) {
       rows = [["version", "workspaces", "workspace_detail", "registry_status_albus", "last_used_albus", "note_albus"], ...data.rdsVersions.rows.map(item => [item.version, item.workspaces, item.detail, item.registryStatus, item.lastUsed, item.note])];
     } else if (state.explorerQuery === RDS_CONSUMERS) {
-      rows = [["workspace", "environment", "current_run", "module"], ...visibleRows(RDS_CONSUMERS).map(node => [node.name, node.environment, node.runStatus, "terraform-aws-rds v5.1.0"])];
+      rows = [["workspace", "tag", "current_run", "module"], ...visibleRows(RDS_CONSUMERS).map(node => [node.name, node.environment, node.runStatus, "terraform-aws-rds v5.1.0"])];
     } else {
       const result = queryInfo(state.explorerQuery).result;
       rows = [["name", "type", "details"], ...result.nodes.map(node => [node.name, result.type, node.detail])];
@@ -847,7 +847,7 @@
     }
     if (info.key === RDS_CONSUMERS) {
       const module = { key: "labels/aws", name: "labels/aws", kind: "module", details: [["Project name", "platform"], ["Current run ID", "run-Ax7mKPqZ2nLvYw"], ["Run status", "applied"], ["VCS repo", "example1/labels-aws"], ["No-code module", "no-code-module-3"], ["Module count", "12"], ["Providers", "registry.terraform.io/hashicorp/aws"], ["Terraform version", "1.3.0"], ["Drifted", "false"], ["Resource count", "21"]] };
-      return [module, ...visibleRows(RDS_CONSUMERS).map(node => ({ key: node.name, name: node.name, kind: "workspace", alert: node.environment === "production", details: [["Environment", node.environment], ...workspaceDetails(node).filter(([term]) => term !== "Project name"), ["Module", "terraform-aws-rds v5.1.0"]] }))];
+      return [module, ...visibleRows(RDS_CONSUMERS).map(node => ({ key: node.name, name: node.name, kind: "workspace", alert: node.environment === "production", details: [["Tag", node.environment], ...workspaceDetails(node).filter(([term]) => term !== "Project name"), ["Module", "terraform-aws-rds v5.1.0"]] }))];
     }
     const { result } = info;
     if (["module", "provider"].includes(result.type)) {

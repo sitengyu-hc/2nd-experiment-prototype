@@ -189,6 +189,25 @@ test("run → Explorer graph: RETURNED NODES lists the module and its consumers 
   await expect(conversation(page)).toContainText("Five other workspaces");
 });
 
+test("module consumers use the Explorer Tag property, not Environment", async ({ page }) => {
+  await openRunInExplorer(page);
+  await expect(page.locator(".results-table th")).toContainText(["Tag"]);
+  await expect(page.locator(".results-table thead")).not.toContainText("Environment");
+
+  await conversation(page).locator('[data-node-row="payments-prod-eu"]').click();
+  const details = conversation(page).locator(".node-row.is-open .node-row-details");
+  await expect(details.locator("dt").first()).toHaveText("Tag");
+  await expect(details.locator("dd").first()).toHaveText("production");
+  await expect(details).not.toContainText("Environment");
+
+  // Canvas node card (Albus closed) uses the same label.
+  await page.locator("#advisor-close").click();
+  await page.getByRole("button", { name: "Graph" }).click();
+  await page.locator('[data-graph-node="payments-staging"]').click();
+  await expect(page.locator(".node-detail")).toContainText("Tag");
+  await expect(page.locator(".node-detail")).not.toContainText("Environment");
+});
+
 test("new session resets Explorer query, selection, and messages", async ({ page }) => {
   await openRunInExplorer(page);
   await page.getByRole("button", { name: "New session" }).click();
