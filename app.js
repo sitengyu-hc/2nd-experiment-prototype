@@ -36,6 +36,7 @@
     hiddenColumns: [], // table columns hidden via "View columns"
     columnsMenuOpen: false,
     graphHudHidden: false,
+    tableHudHidden: false,
     conditionDraft: null,
     editingConditions: false,
     queryHistory: [],
@@ -224,20 +225,16 @@
     // Show conditions, and View columns above the table; graph view has a floating HUD over the canvas.
     if (state.explorerDisplay === "graph" && !info.derived) {
       return `<div class="explorer-page explorer-graph-page">
+        <div class="active-query-row graph-query-row">${state.graphHudHidden ? '<button type="button" class="table-hud-show" data-action="toggle-graph-hud">VIEW</button>' : `<div class="table-compact-hud"><div class="compact-hud-header"><strong>ACTIVE QUERY</strong><button type="button" class="table-hud-hide" data-action="toggle-graph-hud">HIDE</button></div>${compactQueryContent(info)}</div>`}${displayToggle(info)}</div>
+        ${receiptLine(info)}${refineField(info)}
         <div class="explorer-canvas is-full">${graphFor(info)}${state.advisorOpen ? "" : nodeDetailCard()}</div>
-        ${state.graphHudHidden
-          ? '<button type="button" class="graph-hud-show" data-action="toggle-graph-hud">VIEW</button>'
-          : `<section class="graph-hud" aria-label="Query">
-              <div class="graph-hud-top">${displayToggle(info)}<button type="button" class="graph-hud-hide" data-action="toggle-graph-hud">HIDE</button></div>
-              ${activeQueryCard(info)}${receiptLine(info)}${refineField(info)}
-            </section>`}
         ${state.modal === "save-view" ? saveViewModal() : ""}
       </div>`;
     }
     const spec = tableSpec(info);
     const savedNote = state.lastSaved ? `<span class="saved-note">Saved as “${escapeHtml(state.lastSaved)}”</span>` : "";
     return `<div class="explorer-page table-first">
-      <div class="active-query-row">${activeQueryCard(info)}${displayToggle(info)}</div>
+      <div class="active-query-row">${state.tableHudHidden ? '<button type="button" class="table-hud-show" data-action="toggle-table-hud">VIEW</button>' : `<div class="table-compact-hud"><div class="compact-hud-header"><strong>ACTIVE QUERY</strong><button type="button" class="table-hud-hide" data-action="toggle-table-hud">HIDE</button></div>${compactQueryContent(info)}</div>`}${displayToggle(info)}</div>
       ${conditionsAccordion()}
       ${receiptLine(info)}
       ${refineField(info)}
@@ -250,6 +247,14 @@
   }
 
   // "← Back to query and results" returns to the Explorer entry HUD (Albus panel stays as it is).
+  function compactQueryContent(info) {
+    return `<div class="compact-query-content">
+      <strong class="aq-title">${info.derived ? '<span class="derived-tag" title="Computed by Albus, not a native Explorer query">✦ Albus-derived</span> ' : ""}${escapeHtml(info.title)}</strong>
+      <span class="aq-count">${tableCountLabel(info)}</span>
+      <button type="button" class="aq-back" data-action="back-to-explorer">← Back to query and results</button>
+    </div>`;
+  }
+
   function activeQueryCard(info) {
     return `<section class="active-query-card" aria-label="Active query">
       <span class="aq-label">ACTIVE QUERY</span>
@@ -1063,6 +1068,7 @@
     if (action === "toggle-conditions" && state.editingConditions) { state.editingConditions = false; state.conditionDraft = null; renderMain(); return; }
     if (action === "toggle-columns") { state.columnsMenuOpen = !state.columnsMenuOpen; renderMain(); }
     if (action === "toggle-graph-hud") { state.graphHudHidden = !state.graphHudHidden; renderMain(); }
+    if (action === "toggle-table-hud") { state.tableHudHidden = !state.tableHudHidden; renderMain(); }
     if (action === "edit-conditions" || action === "toggle-conditions") {
       if (state.explorerDisplay === "graph") state.explorerDisplay = "table";
       state.conditionDraft = { type: state.queryType, conditions: state.queryConditions.map(condition => ({ ...condition })), albus: state.queryAlbus };

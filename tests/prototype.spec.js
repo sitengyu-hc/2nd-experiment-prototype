@@ -76,7 +76,7 @@ test("tier 1 from the run: Explorer opens as a table with chips and a one-line r
 
 test("Back to query and results keeps Albus open with the run conversation", async ({ page }) => {
   await openRunInExplorer(page);
-  await page.locator(".active-query-card").getByRole("button", { name: "← Back to query and results" }).click();
+  await page.locator(".table-compact-hud").getByRole("button", { name: "← Back to query and results" }).click();
 
   await expect(page.locator(".explorer-hud")).toBeVisible();
   await expect(advisor(page)).toHaveClass(/is-open/);
@@ -106,7 +106,7 @@ test("tier 2 → tier 3 → graph → save → export (demo flow §5)", async ({
   await expect(card).toContainText("Couldn't check");
   await expect(card).toContainText("Applied to table");
   await expect(page.locator(".derived-banner")).toContainText("Albus-derived view");
-  await expect(page.locator(".active-query-card")).toContainText("terraform-aws-rds — all published versions");
+  await expect(page.locator(".table-compact-hud")).toContainText("terraform-aws-rds — all published versions");
   await expect(page.locator("th.albus-col")).toHaveText(["✦ Registry status", "✦ Last used", "✦ Note"]);
   await expect(page.locator("th.albus-col").first()).toHaveAttribute("title", /Private registry/);
   await expect(page.locator(".derived-table tbody tr")).toHaveCount(6);
@@ -150,7 +150,7 @@ test("tier 2 → tier 3 → graph → save → export (demo flow §5)", async ({
   expect((await download).suggestedFilename()).toBe("rds-version-lifecycle.csv");
 
   // The saved view (with its ✦ badge) is listed under Browse → Saved views on the Explorer entry card.
-  await page.locator(".active-query-card").getByRole("button", { name: "← Back to query and results" }).click();
+  await page.locator(".table-compact-hud").getByRole("button", { name: "← Back to query and results" }).click();
   await page.locator(".explorer-hud").getByRole("button", { name: /Types, Use cases and Saved views/i }).click();
   await page.locator("[data-action=saved-views]").click();
   await expect(page.locator(".explorer-modal")).toContainText("RDS version lifecycle");
@@ -170,7 +170,7 @@ test("table rows have no hover affordance; graph selection shows in the Albus li
   await page.getByRole("button", { name: "Graph" }).click();
   await page.locator('[data-graph-node="payments-prod-eu"]').click();
   await expect(conversation(page).locator(".node-row.is-open")).toContainText("payments-prod-eu");
-  await expect(page.locator(".graph-hud .active-query-card")).toContainText("Drifted workspaces");
+  await expect(page.locator(".graph-query-row .compact-query-content")).toContainText("Drifted workspaces");
 
   await page.getByRole("button", { name: "Table" }).click();
   await expect(row).toHaveClass(/is-selected/);

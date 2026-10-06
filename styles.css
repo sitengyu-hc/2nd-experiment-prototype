@@ -474,7 +474,16 @@ tr.clickable:hover { background: #f1f6ff; }
 
 /* Results layout (design-assets/explorer-oct-5, designs 02-03) */
 .active-query-row { display: flex; align-items: flex-start; gap: 16px; }
-.active-query-row .active-query-card { flex: 1; }
+.active-query-row .table-compact-hud { flex: 1; }
+.table-compact-hud { display: grid; gap: 8px; padding: 14px 20px; border: 1px solid #dedfe3; border-radius: 8px; background: #fff; box-shadow: 0 6px 18px #0000001a; }
+.compact-query-content { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 20px; align-items: start; }
+.compact-query-content .aq-title { justify-self: start; font-size: 16px; }
+.compact-query-content .aq-count { justify-self: start; grid-column: auto; grid-row: auto; }
+.compact-query-content .aq-back { grid-column: 2; grid-row: 1 / span 2; justify-self: end; align-self: start; }
+.compact-hud-header { display: flex; align-items: center; justify-content: space-between; min-height: 18px; }
+.compact-hud-header strong { color: #515562; font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.table-hud-hide, .table-hud-show { border: 0; background: transparent; color: #151519; font-size: 11px; font-weight: 700; letter-spacing: .06em; cursor: pointer; }
+.table-hud-show { padding: 14px 0; }
 .active-query-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 24px; padding: 14px 20px; border: 1px solid #dedfe3; border-radius: 8px; background: #fff; box-shadow: 0 6px 18px #0000001a; }
 .aq-label { color: #1060ff; font-size: 12px; font-weight: 600; letter-spacing: .06em; }
 .aq-title { justify-self: center; color: #0c0c0e; font-size: 16px; font-weight: 600; }
@@ -509,12 +518,13 @@ tr.clickable:hover { background: #f1f6ff; }
 .table-first .results-panel .results-table { background: #fff; }
 /* Graph view: floating HUD over the canvas (design 03) */
 .explorer-view .explorer-page.explorer-graph-page { position: relative; height: 100%; overflow: hidden; }
-.explorer-canvas.is-full { position: absolute; inset: 0; min-height: 0; border: 0; border-radius: 0; }
+.explorer-graph-page .graph-query-row { position: relative; z-index: 7; margin: 18px 28px 0; }
+.explorer-canvas.is-full { position: absolute; inset: 92px 0 0; min-height: 0; border: 0; border-radius: 0; }
 .graph-hud { position: absolute; z-index: 6; top: 24px; left: 32px; display: grid; gap: 12px; width: 300px; padding: 14px; border: 1px solid #dedfe3; border-radius: 8px; background: #fff; box-shadow: 0 8px 18px #0002; }
-.graph-hud-top { display: flex; align-items: center; justify-content: space-between; }
+.graph-hud .compact-hud-header { padding: 0 2px; }
 .graph-hud-hide { border: 0; background: transparent; color: #151519; font-size: 11px; font-weight: 700; letter-spacing: .06em; cursor: pointer; }
-.graph-hud .active-query-card { grid-template-columns: 1fr; gap: 4px; padding: 14px 16px; box-shadow: none; }
-.graph-hud .aq-title, .graph-hud .aq-count, .graph-hud .aq-back { grid-column: 1; grid-row: auto; justify-self: start; }
+.graph-hud .compact-query-content { gap: 4px; }
+.graph-hud .aq-title, .graph-hud .aq-count { grid-column: 1; grid-row: auto; justify-self: start; }
 .graph-hud .ask-bar { width: 100%; }
 .graph-hud .query-receipt .card-actions { margin-left: 0; }
 .graph-hud-show { position: absolute; z-index: 6; top: 24px; left: 0; width: 40px; height: 56px; border: 1px solid #dedfe3; border-left: 0; border-radius: 0 8px 8px 0; background: #fff; color: #3b3d45; font-size: 10px; font-weight: 700; writing-mode: vertical-rl; cursor: pointer; }
