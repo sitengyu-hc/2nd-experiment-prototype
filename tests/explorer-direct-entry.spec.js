@@ -50,7 +50,7 @@ test("Browse dropdown opens the original menu and runs scripted views", async ({
   await expect(page.locator(".table-compact-hud")).toContainText("View all modules");
 });
 
-test("a query opens Albus with a summary and the RETURNED NODES list (table)", async ({ page }) => {
+test("a query opens Albus with a summary and the RETURNED WORKSPACES list (table)", async ({ page }) => {
   await openExplorer(page);
   await searchHud(page, "Drifted workspaces");
 
@@ -59,9 +59,9 @@ test("a query opens Albus with a summary and the RETURNED NODES list (table)", a
   await expect(page.locator(".query-chip")).toHaveText(["Workspaces", "Drifted is true"]);
   await expect(latestReceipt(page)).toContainText("Built query: Workspaces where Drifted is true · 8 results");
   await expect(page.locator("#conversation .results-summary")).toContainText("This table lists workspaces where the infrastructure currently differs");
-  await expect(page.locator("#conversation .results-heading")).toContainText("RETURNED NODES");
+  await expect(page.locator("#conversation .results-heading span")).toHaveText("RETURNED WORKSPACES");
   await expect(nodeRows(page)).toHaveCount(8);
-  await expect(page.locator("#node-search")).toHaveAttribute("placeholder", "Search nodes");
+  await expect(page.locator("#node-search")).toHaveAttribute("placeholder", "Search results");
   // Albus is open, so the page has no second text box.
   await expect(hudInput(page)).toHaveCount(0);
 });
@@ -95,7 +95,7 @@ test("list rows, table rows and graph nodes stay in sync", async ({ page }) => {
   await expect(page.locator("#conversation .node-row.is-open")).toHaveCount(0);
 });
 
-test("Search nodes filters the list", async ({ page }) => {
+test("Search results filters the list", async ({ page }) => {
   await openExplorer(page);
   await searchHud(page, "Drifted workspaces");
   await page.locator("#node-search").fill("staging");
@@ -111,7 +111,8 @@ test("VIEW MODE on the entry card carries into the first query", async ({ page }
   await page.locator(".hud-prompts").getByRole("button", { name: /View all providers/ }).click();
 
   await expect(page.locator(".relationship-topology")).toBeVisible();
-  // Graph results get the same RETURNED NODES list.
+  // Graph results get the same list, named for what it holds (providers and their workspaces).
+  await expect(page.locator("#conversation .results-heading span")).toHaveText("RETURNED PROVIDERS & WORKSPACES");
   await expect(nodeRows(page).first()).toContainText("hashicorp/aws");
   await expect(page.locator("#conversation .results-summary")).toContainText("providers used across CoolCorp");
 });

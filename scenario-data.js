@@ -260,7 +260,7 @@ window.PROTOTYPE_DATA = {
     },
     rows: [
       { version: "v3.2.0", workspaces: 2, detail: "legacy-data, sandbox-testing", registryStatus: "Deprecated", status: "deprecated", lastUsed: "3 days ago", note: "Deprecated but still in use" },
-      { version: "v4.0.0", workspaces: 14, detail: "incl. payments-prod-eu (current state)", registryStatus: "Published", status: "published", lastUsed: "today", note: "Safe rollback target" },
+      { version: "v4.0.0", workspaces: 14, detail: "incl. payments-prod-eu (current state)", registryStatus: "Published", status: "published", lastUsed: "today", note: "Interim target until v5.1.1" },
       { version: "v4.1.0", workspaces: 0, detail: "", registryStatus: "Published", status: "published", lastUsed: "Feb 2026", note: "No longer in use" },
       { version: "v4.2.0", workspaces: 0, detail: "", registryStatus: "Published", status: "published", lastUsed: "Mar 2026", note: "No longer in use" },
       { version: "v5.0.0", workspaces: 0, detail: "", registryStatus: "Published", status: "published", lastUsed: "never", note: "Never adopted" },
@@ -392,8 +392,8 @@ window.PROTOTYPE_DATA = {
     "What options do I have to fix this?": {
       type: "answer",
       feedback: true,
-      html: `<p>There are three paths, depending on whether the database rename was intended:</p><ol><li><strong>Safest: revert the module upgrade.</strong> Pin the caller to <code>v4.0.0</code>, then run a new plan. This preserves the current database.</li><li><strong>Upgrade without renaming.</strong> Update v5.1.0 so it keeps the existing <code>db_name</code>. Validate the module change with a new plan before rolling it out.</li><li><strong>Perform a controlled replacement.</strong> Only if a new database is intended: create a migration and backup plan, review dependents, then explicitly manage the lifecycle guard. Do not simply remove <code>prevent_destroy</code>.</li></ol><div class="code-card"><div class="code-title">main.tf</div><pre><span class="line">18</span> module "database" {\n<span class="line">19</span> <span class="minus">- source = "./modules/rds/v5.1.0"</span>\n<span class="line">20</span> <span class="plus">+ source = "./modules/rds/v4.0.0"</span>\n<span class="line">21</span> }</pre></div>`,
-      evidence: ["Configuration version diff", "Module v4.0.0", "Module v5.1.0"]
+      html: `<p>You can get onto v5.1 without replacing the database. The rename happens inside the module (v5.1.0 sets <code>db_name</code> to <code>"prod_app-db"</code>; it was <code>"app-db"</code>), so the fix needs a small module release:</p><ol><li><strong>Recommended: upgrade to v5.1.1 that keeps your <code>db_name</code>.</strong> Ask the <code>rds</code> module owner to expose <code>db_name</code> as an input in v5.1.1, then set it to the current name and run a new plan. It should show no replacement.</li><li><strong>Until v5.1.1 is published: stay on v4.0.0.</strong> Keep the source at <code>v4.0.0</code> so nothing is replaced, and move to v5.1.1 when it's available.</li><li><strong>Controlled replacement</strong>, only if a new database is intended: create a migration and backup plan, review dependents, then explicitly manage the lifecycle guard. Do not simply remove <code>prevent_destroy</code>.</li></ol><div class="code-card"><div class="code-title">main.tf · with v5.1.1</div><pre><span class="line">17</span> module "database" {\n<span class="line">22</span> <span class="minus">- source = "./modules/rds/v5.1.0"</span>\n<span class="line">22</span> <span class="plus">+ source = "./modules/rds/v5.1.1"</span>\n<span class="line">23</span> <span class="plus">+ db_name = "app-db" # keep the existing database</span>\n<span class="line">24</span>   name    = "app-db"\n<span class="line">33</span> }</pre></div>`,
+      evidence: ["Configuration version diff", "Module v5.1.0", "Private registry: rds versions"]
     },
     "What other workspaces are using RDS module v5.1.0?": {
       type: "answer",
@@ -404,7 +404,7 @@ window.PROTOTYPE_DATA = {
     "How do I avoid destroying the database?": {
       type: "answer",
       feedback: true,
-      html: `<p>Keep the existing <code>db_name</code> and preserve <code>prevent_destroy</code>. The lowest-risk immediate action is to revert the module source to v4.0.0, then run a new plan.</p><p>Do not remove the lifecycle guard just to make this plan pass. If the rename is required, treat it as a database migration with backups, validation, and an approved maintenance window.</p>`,
+      html: `<p>Keep the existing <code>db_name</code> and preserve <code>prevent_destroy</code>. The way forward is <strong>v5.1.1 with <code>db_name</code> as an input</strong>, set to <code>"app-db"</code>; ask the <code>rds</code> module owner to publish it. Until then, staying on v4.0.0 keeps the database safe.</p><p>Do not remove the lifecycle guard just to make this plan pass. If the rename is required, treat it as a database migration with backups, validation, and an approved maintenance window.</p>`,
       evidence: ["Terraform lifecycle documentation", "Configuration version diff"]
     },
     "Who introduced the lifecycle guard?": {

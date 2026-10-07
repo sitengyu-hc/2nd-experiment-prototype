@@ -182,9 +182,30 @@ test("run prompts collapse after a guided question generates a response", async 
   await openFailedRun(page);
   await page.getByRole("button", { name: "What options do I have to fix this?" }).click();
 
-  await expect(conversation(page)).toContainText("There are three paths");
+  await expect(conversation(page)).toContainText("You can get onto v5.1 without replacing the database");
   await expect(promptToggle(page)).toHaveAttribute("aria-expanded", "false");
   await expect(page.locator("#prompt-menu .prompt-list")).toBeHidden();
+});
+
+test("fix options lead with the forward path (v5.1.1 keeping db_name); v4.0.0 is only interim", async ({ page }) => {
+  await openFailedRun(page);
+  await page.getByRole("button", { name: "What options do I have to fix this?" }).click();
+  const options = conversation(page).locator(".advisor-message").last().locator("ol > li");
+  await expect(options).toHaveCount(3);
+  await expect(options.nth(0)).toContainText("Recommended: upgrade to v5.1.1 that keeps your db_name");
+  await expect(options.nth(1)).toContainText("Until v5.1.1 is published: stay on v4.0.0");
+  await expect(options.nth(2)).toContainText("Controlled replacement");
+  await expect(conversation(page).locator(".code-card")).toContainText('db_name = "app-db"');
+  await expect(conversation(page)).not.toContainText(/revert|roll ?back/i);
+});
+
+test("RETURNED list is named for its contents, never 'nodes'", async ({ page }) => {
+  await openRunInExplorer(page);
+  await expect(conversation(page).locator(".results-heading span")).toHaveText("RETURNED MODULES & WORKSPACES");
+  await promptToggle(page).click();
+  await page.locator("#prompt-menu").getByRole("button", { name: "Which RDS module versions are no longer in use?" }).click();
+  await expect(conversation(page).locator(".results-heading span")).toHaveText("RETURNED VERSIONS");
+  await expect(page.locator('tr[data-row-key="v4.0.0"]')).toContainText("Interim target until v5.1.1");
 });
 
 test("tier 1 from the run: Explorer opens as a table with chips and a one-line receipt", async ({ page }) => {
@@ -318,10 +339,12 @@ test("table rows have no hover affordance; graph selection shows in the Albus li
   await expect(page.locator('[data-graph-node="payments-prod-sa"]')).toHaveClass(/is-focused/);
 });
 
-test("run → Explorer graph: RETURNED NODES lists the module and its consumers (design 03)", async ({ page }) => {
+test("run → Explorer graph: RETURNED MODULES & WORKSPACES lists the module and its consumers (design 03)", async ({ page }) => {
   await openRunInExplorer(page);
   await page.getByRole("button", { name: "Graph" }).click();
   await expect(conversation(page).locator(".node-row")).toHaveCount(6);
+  await expect(conversation(page).locator(".results-heading span")).toHaveText("RETURNED MODULES & WORKSPACES");
+  await expect(conversation(page)).not.toContainText(/nodes/i);
   await page.locator('[data-action="select-module"]').click();
   const open = conversation(page).locator(".node-row.is-open");
   await expect(open).toContainText("rds/v5.1.0");

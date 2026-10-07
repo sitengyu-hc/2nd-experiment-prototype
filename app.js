@@ -34,7 +34,7 @@
     queryConditions: [],
     queryAlbus: null,
     refinements: [], // ids of data.refinements applied to the current query
-    nodeSearch: "", // filter text for the RETURNED NODES list in the Albus panel
+    nodeSearch: "", // filter text for the RETURNED <type> list in the Albus panel
     hiddenColumns: [], // table columns hidden via "View columns"
     columnsMenuOpen: false,
     graphHudHidden: false,
@@ -473,7 +473,7 @@
     return `<div class="derived-banner"><span class="albus-mark">✦</span><div><strong>Albus-derived view.</strong> Combines Explorer usage with your private registry and run history. Columns marked ✦ are computed by Albus; hover for sources.</div></div>`;
   }
 
-  // Rows themselves aren't clickable; the name link selects the row (and opens it in Albus's RETURNED NODES).
+  // Rows themselves aren't clickable; the name link selects the row (and opens it in Albus's RETURNED <type> list).
   const rowClass = key => [state.highlightedRows.includes(key) ? "is-highlighted" : "", state.selectedNode === key ? "is-selected" : ""].join(" ").trim();
   const nameLink = (key, label, alert, review) => `<button type="button" class="row-name-link" data-node-row="${escapeAttr(key)}">${escapeHtml(label)}</button>${alert ? ` <span class="risk-node" title="${escapeAttr(review || "Needs review")}">!</span>` : ""}`;
 
@@ -854,7 +854,7 @@
       const refinement = findRefinement(question);
       if (refinement) addRefinement(refinement);
       setReceipt(label, receiptText(), true);
-      // Running a query opens Albus with a summary and the RETURNED NODES list (table and graph).
+      // Running a query opens Albus with a summary and the RETURNED <type> list (table and graph).
       if (!state.advisorOpen) { openAdvisor(); return; }
       // Tier 1 only updates the table; the panel stays as it was (closed on direct entry).
     } else if (response.tier === 2 || response.tier === 3) {
@@ -898,7 +898,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Albus panel: what the current results are, plus the RETURNED NODES list (designs 02-04)
+  // Albus panel: what the current results are, plus the RETURNED <type> list (designs 02-04)
   // ---------------------------------------------------------------------------
 
   function workspaceDetails(node) {
@@ -945,6 +945,15 @@
     }));
   }
 
+  // Name what the list holds ("RETURNED WORKSPACES", "RETURNED MODULES & WORKSPACES") instead of the graph
+  // term "nodes", which users read as "notes" (JPMC round 2).
+  const KIND_LABELS = { workspace: "WORKSPACES", module: "MODULES", provider: "PROVIDERS", resource: "RESOURCES" };
+  function resultsLabel(info, rows) {
+    if (info.derived) return "RETURNED VERSIONS";
+    const kinds = [...new Set(rows.map(row => row.kind))].map(kind => KIND_LABELS[kind] || "RESULTS");
+    return `RETURNED ${kinds.length ? [...new Set(kinds)].join(" & ") : "RESULTS"}`;
+  }
+
   function resultsSection() {
     const info = queryInfo(state.explorerQuery);
     if (!info) return "";
@@ -960,8 +969,8 @@
     };
     return `<section class="results-section" aria-label="Query results">
       ${summary ? `<article class="message advisor-message results-summary">${summary}</article>` : ""}
-      <div class="results-heading"><span>RETURNED NODES</span><strong>${rows.length}</strong></div>
-      <label class="node-filter">${viewIcons.search}<input id="node-search" type="search" placeholder="Search nodes" aria-label="Search nodes" value="${escapeAttr(state.nodeSearch)}"></label>
+      <div class="results-heading"><span>${resultsLabel(info, rows)}</span><strong>${rows.length}</strong></div>
+      <label class="node-filter">${viewIcons.search}<input id="node-search" type="search" placeholder="Search results" aria-label="Search results" value="${escapeAttr(state.nodeSearch)}"></label>
       <div class="node-list">${rows.map(rowHtml).join("")}</div>
       <div class="node-pagination"><span>${total}</span><span aria-hidden="true">‹　1 / 1　›</span></div>
     </section>`;
