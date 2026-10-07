@@ -132,11 +132,39 @@
       <div class="page-title-row"><div><h1>Workspaces</h1><p class="lede">Manage infrastructure across your organization.</p></div><button class="primary">New workspace</button></div>
       <div class="tabs"><button class="active">Needs attention</button><button>Errored</button><button>Running</button><button>On hold</button><button>Completed</button></div>
       <div class="toolbar"><label class="search-box">⌕ <input placeholder="Search by workspace name"></label><button class="secondary">All filters</button><span>No filters applied</span></div>
-      <section class="workspace-albus-alert" aria-label="More context available"><div class="workspace-albus-copy"><span class="workspace-albus-spark" aria-hidden="true">✦</span><div><strong>More context available</strong><p>Open ALBUS the conversational agent to investigate related configuration and usage.</p></div></div><button type="button" class="workspace-albus-button" data-action="open-workspace-albus">Explore with Albus</button></section>
+      ${workspacesInsight()}
       <div class="table-wrap"><table><thead><tr><th>Workspace</th><th>Status</th><th>Repository</th><th>Project</th><th>Latest change</th></tr></thead><tbody>
         ${rows.map((row, index) => `<tr><td>${index === 0 ? `<button type="button" class="workspace-name-link" data-nav="workspace-runs"><strong>${row[0]}</strong></button>` : `<strong>${row[0]}</strong>`}</td><td><span class="status-dot ${row[1].toLowerCase().replaceAll(" ", "-")}"></span>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td></tr>`).join("")}
       </tbody></table><div class="pagination">1–7 of 100 <button>1</button><button>2</button><button>3</button><button>…</button><button>10</button></div></div>
     </div>`;
+  }
+
+  // Albus insight cards (one persona each). Workspaces list = platform engineer: one failed run plus the
+  // workspaces at risk of the same failure. Overview = this workspace only. Counts come from the scenario data.
+  function albusInsight({ label, title, body, sources, actions, className = "" }) {
+    return `<section class="workspace-albus-alert ${className}" aria-label="${escapeAttr(label)}"><div class="workspace-albus-copy"><span class="workspace-albus-spark" aria-hidden="true">✦</span><div><strong>${title}</strong><p>${body}</p>${sources ? `<small class="workspace-albus-sources">Sources: ${sources}</small>` : ""}</div></div><div class="workspace-albus-actions">${actions}</div></section>`;
+  }
+
+  function workspacesInsight() {
+    const atRisk = consumers();
+    const production = atRisk.filter(node => node.environment === "production").length;
+    return albusInsight({
+      label: "Albus insight",
+      title: `${escapeHtml(data.workspace.name)}: latest run failed`,
+      body: `<code>${RDS_MODULE}</code> renames <code>db_name</code>, which forces the production database to be replaced; <code>prevent_destroy</code> blocked it. <b>${atRisk.length} other workspaces use ${RDS_MODULE} (${production} production)</b> and may hit the same failure on their next run.`,
+      sources: "run diagnostics · Explorer usage (indexed 6h ago)",
+      actions: `<button type="button" class="workspace-albus-button" data-nav="run">Investigate run</button><button type="button" class="workspace-albus-button" data-action="view-at-risk">View ${atRisk.length} workspaces</button>`
+    });
+  }
+
+  function overviewInsight() {
+    return albusInsight({
+      label: "Albus insight",
+      className: "workspace-runs-alert",
+      title: "Latest run failed",
+      body: `The <code>rds</code> ${data.run.previousModuleVersion} → ${data.run.currentModuleVersion} upgrade would replace this production database. Nothing was changed; <code>prevent_destroy</code> stopped it.`,
+      actions: `<button type="button" class="workspace-albus-button" data-nav="run">Investigate with Albus</button>`
+    });
   }
 
   function workspaceRunsView() {
@@ -153,7 +181,7 @@
         <div class="workspace-runs-meta"><span>♧ Unlocked</span><span>▣ Resources <b>${data.workspace.resources}</b></span><span>◇ Tags <b>3</b></span><span>◈ Terraform <u>${data.workspace.terraformVersion}</u></span><span>◷ Updated <b>today at 10:12 AM</b></span></div>
         <h2 class="current-run-heading">Current Run</h2>
         <div class="current-run-card" data-nav="run">${runRow(runs[0])}</div>
-        <section class="workspace-runs-alert workspace-albus-alert" aria-label="More context available"><div class="workspace-albus-copy"><span class="workspace-albus-spark" aria-hidden="true">✦</span><div><strong>More context available</strong><p>Open ALBUS the conversational agent to investigate related configuration and usage.</p></div></div><button type="button" class="workspace-albus-button" data-action="open-workspace-albus">Explore with Albus</button></section>
+        ${overviewInsight()}
         <h2 class="run-list-heading">Run List</h2>
         <div class="run-tabs"><button class="active">All <b>126</b></button><button>⚠ Needs Attention <b>0</b></button><button>ⓧ Errored <b>12</b></button><button>◯ Running <b>0</b></button><button>◉ On Hold <b>0</b></button></div>
         <div class="run-list-toolbar"><label class="search-box">⌕ <input placeholder="Search Runs"></label><button class="secondary">☷ Status⌄</button><button class="secondary">☷ Operation⌄</button></div>
@@ -849,6 +877,17 @@
     renderConversation();
   }
 
+  // Run -> Explorer (tier 1): Albus is already open and stays open; the chat gets a one-line receipt.
+  function showImpact() {
+    continueInExplorer();
+    state.promptsOpen = false;
+    applyExplorerQuery(RDS_CONSUMERS);
+    state.queryHistory = [];
+    setReceipt("Built query", receiptText(), true);
+    renderMain();
+    renderConversation();
+  }
+
   function continueInExplorer() {
     state.navCollapsed = true;
     document.body.classList.add("nav-collapsed");
@@ -1092,12 +1131,14 @@
       if (state.advisorOpen) closeAdvisor();
       else { openAdvisor(); initializeAdvisor(); }
     }
-    if (action === "open-workspace-albus") {
-      state.advisorJourney = "explorer";
-      state.messages = [];
-      state.promptsOpen = defaultPromptsOpen("explorer");
+    if (action === "view-at-risk") {
+      // Workspaces list → straight to the at-risk workspaces: same state as asking the run page
+      // "What other workspaces…?" and following its Explorer link, so the rest of the demo path continues.
+      setView("run", { impactMode: false, advisorJourney: "run" });
       openAdvisor();
       initializeAdvisor();
+      ask("What other workspaces are using RDS module v5.1.0?");
+      showImpact();
     }
     if (action === "open-advisor") { openAdvisor(); initializeAdvisor(); }
     if (action === "new-session") {
@@ -1108,16 +1149,7 @@
       renderMain();
       renderConversation();
     }
-    if (action === "show-impact") {
-      // Run -> Explorer (tier 1): Albus is already open and stays open; the chat gets a one-line receipt.
-      continueInExplorer();
-      state.promptsOpen = false;
-      applyExplorerQuery(RDS_CONSUMERS);
-      state.queryHistory = [];
-      setReceipt("Built query", receiptText(), true);
-      renderMain();
-      renderConversation();
-    }
+    if (action === "show-impact") showImpact();
     if (action === "show-blast-radius") ask("Show blast radius for v5.1.0");
     if (action === "select-module") selectNode(RDS_MODULE);
     if (action === "clear-node") { state.selectedNode = null; renderMain(); renderConversation(); }

@@ -92,18 +92,56 @@ test("a new page starts scrolled to the top", async ({ page }) => {
   expect(await page.locator("#main-content").evaluate(element => element.scrollTop)).toBe(0);
 });
 
-for (const [where, open] of [
-  ["Workspaces", async page => page.goto("/")],
-  ["workspace Runs", async page => { await page.goto("/"); await page.locator('button[data-nav="workspace-runs"]').click(); }]
-]) {
-  test(`"Explore with Albus" on ${where} opens Albus`, async ({ page }) => {
-    await open(page);
-    await expect(page.locator(".workspace-albus-alert")).toContainText("More context available");
-    await page.locator('[data-action="open-workspace-albus"]').click();
-    await expect(advisor(page)).toHaveClass(/is-open/);
-    await expect(conversation(page).locator(".advisor-message").first()).toBeVisible();
-  });
-}
+test("Workspaces list: Albus insight names the failed run and the workspaces at risk", async ({ page }) => {
+  await page.goto("/");
+  const card = page.locator(".workspace-albus-alert");
+  await expect(card.locator("strong").first()).toHaveText("payments-prod-eu: latest run failed");
+  await expect(card).toContainText("rds/v5.1.0 renames db_name");
+  await expect(card).toContainText("5 other workspaces use rds/v5.1.0 (2 production)");
+  await expect(card).toContainText("may hit the same failure on their next run");
+  await expect(card.locator(".workspace-albus-sources")).toContainText("Explorer usage (indexed 6h ago)");
+  await expect(card).not.toContainText(/More context available|ALBUS/);
+  await expect(advisor(page)).not.toHaveClass(/is-open/);
+});
+
+test("Workspaces insight → Investigate run opens the failed run with Albus", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".workspace-albus-alert").getByRole("button", { name: "Investigate run" }).click();
+  await expect(page.locator(".run-page")).toBeVisible();
+  await expect(advisor(page)).toHaveClass(/is-open/);
+  await expect(conversation(page)).toContainText("The plan failed because");
+});
+
+test("Workspaces insight → View 5 workspaces lands on the consumers view and the main path continues", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".workspace-albus-alert").getByRole("button", { name: "View 5 workspaces" }).click();
+
+  await expect(page.locator(".table-compact-hud .aq-title")).toHaveText("Workspaces using rds/v5.1.0");
+  await expect(page.locator(".results-table tbody tr")).toHaveCount(5);
+  await expect(advisor(page)).toHaveClass(/is-open/);
+  await expect(conversation(page)).toContainText("Five other workspaces are using the RDS module at v5.1.0.");
+  await expect(conversation(page)).toContainText("You are now viewing the module consumers in Explorer.");
+  await expect(conversation(page)).not.toContainText("Ask about the results in the table");
+
+  // Tier 2 continues from here, and "Back to run" still reaches the failed run.
+  await promptToggle(page).click();
+  await page.locator("#prompt-menu").getByRole("button", { name: "Which RDS module versions are no longer in use?" }).click();
+  await expect(page.locator(".table-compact-hud")).toContainText("rds — all published versions");
+  await page.getByRole("button", { name: "Back to run" }).click();
+  await expect(page.locator(".run-page")).toBeVisible();
+});
+
+test("workspace overview insight is about this workspace only and opens its failed run", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('button[data-nav="workspace-runs"]').click();
+  const card = page.locator(".workspace-runs-page .workspace-albus-alert");
+  await expect(card.locator("strong").first()).toHaveText("Latest run failed");
+  await expect(card).toContainText("rds v4.0.0 → v5.1.0 upgrade would replace this production database");
+  await expect(card).not.toContainText(/other workspaces|rds\/v5\.1\.0 \(/);
+  await card.getByRole("button", { name: "Investigate with Albus" }).click();
+  await expect(page.locator(".run-page")).toBeVisible();
+  await expect(advisor(page)).toHaveClass(/is-open/);
+});
 
 test("Explore in Albus opens and closes the Albus panel", async ({ page }) => {
   await openFailedRun(page);
