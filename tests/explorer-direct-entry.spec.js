@@ -86,9 +86,9 @@ test("list rows, table rows and graph nodes stay in sync", async ({ page }) => {
 
   // Summary row link selects the row too.
   await page.getByRole("button", { name: "Table" }).click();
-  await page.locator("#conversation .results-summary [data-row-ref=payments-prod-eu]").click();
-  await expect(page.locator("#conversation .node-row.is-open")).toContainText("payments-prod-eu");
-  await expect(page.locator('tr[data-row-key="payments-prod-eu"]')).toHaveClass(/is-selected/);
+  await page.locator("#conversation .results-summary [data-row-ref=payments-prod-sa]").click();
+  await expect(page.locator("#conversation .node-row.is-open")).toContainText("payments-prod-sa");
+  await expect(page.locator('tr[data-row-key="payments-prod-sa"]')).toHaveClass(/is-selected/);
 
   // Hide information collapses it.
   await page.locator("#conversation .node-row.is-open .node-row-toggle").click();
@@ -338,7 +338,7 @@ test("View columns hides and restores table columns (Name is always shown)", asy
   await expect(headers).toHaveText(["Name", "Project name", "Current run ID", "Run status", "Details"]);
 
   // Table rows: checkbox + linked name (design 02); the name link opens the row in Albus.
-  await expect(page.locator('tr[data-row-key="payments-prod-eu"] input[type=checkbox]')).toBeVisible();
+  await expect(page.locator('tr[data-row-key="payments-prod-sa"] input[type=checkbox]')).toBeVisible();
   await page.locator(".results-table .row-name-link", { hasText: "analytics-prod" }).click();
   await expect(page.locator("#conversation .node-row.is-open")).toContainText("analytics-prod");
 });

@@ -108,7 +108,7 @@
 
   function workspacesView() {
     const rows = [
-      ["my-workspace", "Errored", "team-terraform-sleep", "Default Project", "a few seconds ago"],
+      [data.workspace.name, "Errored", "team-terraform-sleep", "Default Project", "a few seconds ago"],
       ["staging-web", "Policy checked", "None", "tf-remote-dev", "a few seconds ago"],
       ["prod-database", "Planned and finished", "None", "tf-remote-test", "2 minutes ago"],
       ["sandbox-testing", "No status reported", "None", "tf-local-cloud", "3 minutes ago"],
@@ -137,9 +137,9 @@
     const runRow = run => `<button type="button" class="workspace-run-row ${run.current ? "current" : ""}" data-nav="run"><span class="run-avatar">${run.actor === data.run.actor ? "👨🏻‍💻" : "👨🏻‍💻"}</span><span class="run-row-content"><strong>${run.title}</strong><small>${run.id}　|　<b>${run.actor}</b> triggered via ${run.source}　|　Branch <em>${run.branch}</em>　|　<a>${run.commit}</a></small></span><span class="run-status">${run.status}</span></button>`;
     return `<div class="workspace-runs-page">
       <main class="workspace-runs-content">
-        <div class="breadcrumbs"><button class="text-link" data-nav="workspaces">CoolCorp</button>　/　<button class="text-link" data-nav="workspaces">Workspaces</button>　/　<strong>payments-prod-eu</strong>　/　Overview</div>
-        <div class="workspace-runs-title"><div><h1>payments-prod-eu</h1><p>ID: ws-1HkX32P8UKEJ3Lmo　<span class="copy-id">▣</span></p><button class="text-link">Add workspace description</button></div><button class="primary">＋ New Run</button></div>
-        <div class="workspace-runs-meta"><span>♧ Unlocked</span><span>▣ Resources <b>211</b></span><span>◇ Tags <b>3</b></span><span>◈ Terraform <u>v1.8.4</u></span><span>◷ Updated <b>today at 10:12 AM</b></span></div>
+        <div class="breadcrumbs"><button class="text-link" data-nav="workspaces">CoolCorp</button>　/　<button class="text-link" data-nav="workspaces">Workspaces</button>　/　<strong>${data.workspace.name}</strong>　/　Overview</div>
+        <div class="workspace-runs-title"><div><h1>${data.workspace.name}</h1><p>ID: ${data.workspace.id}　<span class="copy-id">▣</span></p><button class="text-link">Add workspace description</button></div><button class="primary">＋ New Run</button></div>
+        <div class="workspace-runs-meta"><span>♧ Unlocked</span><span>▣ Resources <b>${data.workspace.resources}</b></span><span>◇ Tags <b>3</b></span><span>◈ Terraform <u>${data.workspace.terraformVersion}</u></span><span>◷ Updated <b>today at 10:12 AM</b></span></div>
         <h2 class="current-run-heading">Current Run</h2>
         <div class="current-run-card" data-nav="run">${runRow(runs[0])}</div>
         <section class="workspace-runs-alert workspace-albus-alert" aria-label="More context available"><div class="workspace-albus-copy"><span class="workspace-albus-spark" aria-hidden="true">✦</span><div><strong>More context available</strong><p>Open ALBUS the conversational agent to investigate related configuration and usage.</p></div></div><button type="button" class="workspace-albus-button" data-action="open-workspace-albus">Explore with Albus</button></section>
@@ -153,7 +153,7 @@
 
   function runView() {
     return `<div class="page run-page">
-      <div class="breadcrumbs"><button class="text-link" data-nav="workspaces">CoolCorp / Workspaces</button> / my-workspace / Runs / <strong>#${data.run.id}</strong></div>
+      <div class="breadcrumbs"><button class="text-link" data-nav="workspaces">CoolCorp / Workspaces</button> / ${data.workspace.name} / Runs / <strong>#${data.run.id}</strong></div>
       <div class="page-title-row"><div><h1>${data.workspace.name}</h1><p>ID: ${data.workspace.id}</p><button class="text-link">Add workspace description</button></div><div><button class="secondary">▣ Lock</button> <button class="primary">＋ New Run</button></div></div>
       <div class="workspace-meta"><span>▣ Locked by <strong>johndoe</strong></span><span>▤ Resources <strong>${data.workspace.resources}</strong></span><span>◇ Tags <strong>3</strong></span><span>⚑ Terraform <u>${data.workspace.terraformVersion}</u></span></div>
       <p class="updated">◷ Updated today at 10:12 AM</p>
@@ -1008,7 +1008,7 @@
 
   function updateScope() {
     const scope = document.querySelector("#scope");
-    if (scope) scope.textContent = state.advisorJourney === "explorer" ? "CoolCorp / Explorer" : "CoolCorp / my-workspace";
+    if (scope) scope.textContent = state.advisorJourney === "explorer" ? "CoolCorp / Explorer" : `CoolCorp / ${data.workspace.name}`;
   }
 
   function updateNavigation() {

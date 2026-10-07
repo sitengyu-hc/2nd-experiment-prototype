@@ -31,7 +31,7 @@ window.PROTOTYPE_DATA = {
   rdsConsumersQuery: RDS_CONSUMERS,
   rdsVersionsQuery: RDS_VERSIONS,
   workspace: {
-    name: "my-workspace",
+    name: "payments-prod-eu",
     id: "ws-1HkX32P8UKEJ3Lmo",
     organization: "CoolCorp",
     resources: 211,
@@ -52,8 +52,8 @@ window.PROTOTYPE_DATA = {
     currentModuleVersion: "v5.1.0"
   },
   affectedWorkspaces: [
-    { name: "my-workspace", resources: 211, relation: "selected", environment: "production", runStatus: "errored", x: 48, y: 50 },
-    { name: "payments-prod-eu", resources: 95, relation: "consumer", environment: "production", runStatus: "applied", x: 72, y: 23 },
+    { name: "payments-prod-eu", resources: 211, relation: "selected", environment: "production", runStatus: "errored", x: 48, y: 50 },
+    { name: "payments-prod-sa", resources: 95, relation: "consumer", environment: "production", runStatus: "applied", x: 72, y: 23 },
     { name: "payments-staging", resources: 65, relation: "consumer", environment: "staging", runStatus: "planned", x: 79, y: 51 },
     { name: "analytics-prod", resources: 34, relation: "consumer", environment: "analytics", runStatus: "applied", x: 69, y: 77 },
     { name: "platform-rds", resources: 203, relation: "consumer", environment: "platform", runStatus: "applied", x: 27, y: 74 },
@@ -85,14 +85,14 @@ window.PROTOTYPE_DATA = {
   // What Albus says about each query's results (shown above RETURNED NODES in the Albus panel).
   // Row links select the row in the list and the table/graph.
   resultSummaries: {
-    "Drifted workspaces": `<p>This table lists workspaces where the infrastructure currently differs from the Terraform configuration or state recorded by HCP Terraform. The timestamp shows when drift was detected, not necessarily when the underlying change was made.</p><p>I recommend starting with ${row("payments-prod-eu")} because it is a production workspace with the most recent drift detection.</p><p>The results don't yet show whether the drift came from a manual cloud-console change, a state mismatch, or a configuration change. Open a workspace to review the affected resources.</p>`,
+    "Drifted workspaces": `<p>This table lists workspaces where the infrastructure currently differs from the Terraform configuration or state recorded by HCP Terraform. The timestamp shows when drift was detected, not necessarily when the underlying change was made.</p><p>I recommend starting with ${row("payments-prod-sa")} because it is a production workspace with the most recent drift detection.</p><p>The results don't yet show whether the drift came from a manual cloud-console change, a state mismatch, or a configuration change. Open a workspace to review the affected resources.</p>`,
     "View all modules": `<p>These are the modules used by at least one workspace in CoolCorp. ${row("terraform-aws-rds")} is the most widely used, at v5.1.0 across three payments workspaces.</p><p>Open a module to see which workspaces use it and at which version.</p>`,
     "View all providers": `<p>These are the providers used across CoolCorp workspaces. ${row("hashicorp/aws")} is used by the most workspaces; three provider versions need review.</p><p>Open a provider to see its version and the workspaces that use it.</p>`,
     "How many EC2 instances exist across my organization?": `<p>CoolCorp has 47 EC2 instances across 14 workspaces. Most production instances run in us-east-1.</p>`,
     "Which workspaces use AWS provider version 5.x?": `<p>18 workspaces use AWS provider 5.x, from v5.61.0 to v5.82.2. ${row("infra-baseline-qa")} is on the oldest 5.x version.</p>`,
     "What resources depend on workspace X?": `<p>7 resources consume remote-state outputs from workspace X, mostly network IDs and security groups. Review them before changing those outputs.</p>`,
     "Production workspaces": `<p>These are the workspaces tagged production across three projects. ${row("payments-prod-us")} has the most resources and a planned run waiting.</p>`,
-    [RDS_CONSUMERS]: `<p>Five workspaces use terraform-aws-rds at v5.1.0; two are production (${row("payments-prod-eu")} and ${row("payments-prod-us")}), so the same <code>db_name</code> replacement risk may appear when they run next.</p>`
+    [RDS_CONSUMERS]: `<p>Five workspaces use terraform-aws-rds at v5.1.0; two are production (${row("payments-prod-sa")} and ${row("payments-prod-us")}), so the same <code>db_name</code> replacement risk may appear when they run next.</p>`
   },
   // Explorer query model, mirroring HCP Terraform Explorer (atlas app/lib/workspace-explorer.js):
   // pick an object type, then WHERE <column> <operator> <value> AND ... Operators depend on the column type.
@@ -249,7 +249,7 @@ window.PROTOTYPE_DATA = {
   // Albus-derived view (tier 2). Explorer alone only knows versions some workspace uses
   // (visibility-module-version-v2, no registry join). The ✦ columns are computed by Albus.
   // Workspace counts match affectedWorkspaces: v5.1.0 = the 5 consumers (2 production).
-  // my-workspace's v5.1.0 run errored before apply, so its state is still on v4.0.0.
+  // payments-prod-eu's v5.1.0 run errored before apply, so its state is still on v4.0.0.
   rdsVersions: {
     module: "terraform-aws-rds",
     provenance: {
@@ -260,7 +260,7 @@ window.PROTOTYPE_DATA = {
     },
     rows: [
       { version: "v3.2.0", workspaces: 2, detail: "legacy-data, sandbox-testing", registryStatus: "Deprecated", status: "deprecated", lastUsed: "3 days ago", note: "Deprecated but still in use" },
-      { version: "v4.0.0", workspaces: 14, detail: "incl. my-workspace (current state)", registryStatus: "Published", status: "published", lastUsed: "today", note: "Safe rollback target" },
+      { version: "v4.0.0", workspaces: 14, detail: "incl. payments-prod-eu (current state)", registryStatus: "Published", status: "published", lastUsed: "today", note: "Safe rollback target" },
       { version: "v4.1.0", workspaces: 0, detail: "", registryStatus: "Published", status: "published", lastUsed: "Feb 2026", note: "No longer in use" },
       { version: "v4.2.0", workspaces: 0, detail: "", registryStatus: "Published", status: "published", lastUsed: "Mar 2026", note: "No longer in use" },
       { version: "v5.0.0", workspaces: 0, detail: "", registryStatus: "Published", status: "published", lastUsed: "never", note: "Never adopted" },
@@ -275,13 +275,13 @@ window.PROTOTYPE_DATA = {
       type: "module",
       summary: "12 modules across 12 workspaces",
       nodes: [
-        { name: "terraform-aws-rds", detail: "v5.1.0", workspaces: ["payments-prod-eu", "payments-prod-us", "payments-staging"] },
+        { name: "terraform-aws-rds", detail: "v5.1.0", workspaces: ["payments-prod-sa", "payments-prod-us", "payments-staging"] },
         { name: "vpc-baseline", detail: "v3.4.2", workspaces: ["networking-prod", "platform-staging"] },
         { name: "eks-cluster", detail: "v19.5.1", workspaces: ["analytics-prod", "ml-pipeline-prod"] },
         { name: "s3-secure-bucket", detail: "v2.1.0", workspaces: ["data-warehouse-dev", "analytics-prod", "legacy-data"] },
         { name: "iam-role-baseline", detail: "v1.8.3", workspaces: ["security-prod", "platform-staging"] },
-        { name: "cloudwatch-alarms", detail: "v0.9.4", workspaces: ["payments-prod-eu", "payments-prod-us"] },
-        { name: "kms-key", detail: "v1.2.0", workspaces: ["security-prod", "payments-prod-eu"] },
+        { name: "cloudwatch-alarms", detail: "v0.9.4", workspaces: ["payments-prod-sa", "payments-prod-us"] },
+        { name: "kms-key", detail: "v1.2.0", workspaces: ["security-prod", "payments-prod-sa"] },
         { name: "alb-ingress", detail: "v4.0.1", workspaces: ["payments-prod-us", "networking-prod"] },
         { name: "redis-cluster", detail: "v2.3.0", workspaces: ["payments-staging", "sandbox-testing"] },
         { name: "lambda-function", detail: "v6.0.0", workspaces: ["ml-pipeline-prod", "infra-baseline-qa"] },
@@ -295,7 +295,7 @@ window.PROTOTYPE_DATA = {
       type: "provider",
       summary: "12 providers · 3 versions need review",
       nodes: [
-        { name: "hashicorp/aws", detail: "v5.82.2", workspaces: ["payments-prod-eu", "payments-prod-us", "networking-prod"] },
+        { name: "hashicorp/aws", detail: "v5.82.2", workspaces: ["payments-prod-sa", "payments-prod-us", "networking-prod"] },
         { name: "hashicorp/kubernetes", detail: "v2.35.1", workspaces: ["analytics-prod", "ml-pipeline-prod"] },
         { name: "hashicorp/vault", detail: "v4.5.0", workspaces: ["platform-staging", "security-prod"] },
         { name: "hashicorp/random", detail: "v3.6.3", workspaces: ["payments-staging", "sandbox-testing"] },
@@ -304,7 +304,7 @@ window.PROTOTYPE_DATA = {
         { name: "hashicorp/azurerm", detail: "v3.117.0", alert: true, review: "A major version behind (v4.x available)", workspaces: ["legacy-data"] },
         { name: "hashicorp/null", detail: "v3.2.3", workspaces: ["infra-baseline-qa", "sandbox-testing"] },
         { name: "hashicorp/helm", detail: "v2.17.0", workspaces: ["ml-pipeline-prod", "platform-staging"] },
-        { name: "datadog/datadog", detail: "v3.49.0", workspaces: ["payments-prod-eu", "analytics-prod"] },
+        { name: "datadog/datadog", detail: "v3.49.0", workspaces: ["payments-prod-sa", "analytics-prod"] },
         { name: "hashicorp/template", detail: "v2.2.0", alert: true, review: "Deprecated provider; replace with templatefile()", workspaces: ["legacy-data", "infra-baseline-qa"] },
         { name: "cloudflare/cloudflare", detail: "v3.35.0", alert: true, review: "A major version behind (v4.x available)", workspaces: ["networking-prod", "payments-staging"] }
       ]
@@ -315,7 +315,7 @@ window.PROTOTYPE_DATA = {
       type: "workspace",
       summary: "4 production workspaces require review",
       nodes: [
-        { name: "payments-prod-eu", detail: "Drift detected 12m ago", alert: true },
+        { name: "payments-prod-sa", detail: "Drift detected 12m ago", alert: true },
         { name: "payments-prod-us", detail: "Drift detected 24m ago", alert: true },
         { name: "analytics-prod", detail: "Drift detected 1h ago", alert: true },
         { name: "ml-pipeline-prod", detail: "Drift detected 3h ago", alert: true },
@@ -345,7 +345,7 @@ window.PROTOTYPE_DATA = {
       type: "workspace",
       summary: "18 workspaces use AWS provider 5.x",
       nodes: [
-        { name: "payments-prod-eu", detail: "AWS v5.82.2 · applied" },
+        { name: "payments-prod-sa", detail: "AWS v5.82.2 · applied" },
         { name: "payments-prod-us", detail: "AWS v5.82.2 · planned" },
         { name: "networking-prod", detail: "AWS v5.79.0 · applied" },
         { name: "analytics-prod", detail: "AWS v5.76.0 · applied" },
@@ -373,7 +373,7 @@ window.PROTOTYPE_DATA = {
       type: "workspace",
       summary: "6 production workspaces across three projects",
       nodes: [
-        { name: "payments-prod-eu", detail: "Applied · 95 resources" },
+        { name: "payments-prod-sa", detail: "Applied · 95 resources" },
         { name: "payments-prod-us", detail: "Planned · 148 resources" },
         { name: "analytics-prod", detail: "Applied · 34 resources" },
         { name: "networking-prod", detail: "Applied · 76 resources" },
@@ -479,7 +479,7 @@ window.PROTOTYPE_DATA = {
       tier: 3,
       query: RDS_VERSIONS,
       feedback: true,
-      interpretation: "I read this as a <strong>recommendation</strong> on v5.1.0's registry status, using the version table and the failing run in my-workspace. Read-only: nothing will be changed.",
+      interpretation: "I read this as a <strong>recommendation</strong> on v5.1.0's registry status, using the version table and the failing run in payments-prod-eu. Read-only: nothing will be changed.",
       sources: [
         versionSources[0],
         versionSources[1],
@@ -510,8 +510,8 @@ window.PROTOTYPE_DATA = {
         { label: "Workspace tags", detail: "environment", freshness: "live" }
       ],
       gaps: ["Indirect dependents, such as workspaces reading these outputs through remote state, aren't in this view."],
-      insight: `<p><strong>5 workspaces consume v5.1.0; 2 are production:</strong> ${row("payments-prod-eu")} and ${row("payments-prod-us")}. my-workspace failed before applying, so its state is still on v4.0.0.</p>`,
-      rowRefs: ["payments-prod-eu", "payments-prod-us"],
+      insight: `<p><strong>5 workspaces consume v5.1.0; 2 are production:</strong> ${row("payments-prod-sa")} and ${row("payments-prod-us")}. payments-prod-eu failed before applying, so its state is still on v4.0.0.</p>`,
+      rowRefs: ["payments-prod-sa", "payments-prod-us"],
       nextPrompts: ["Should we deprecate v5.1.0?", "Which RDS module versions are no longer in use?"],
       actions: ["save-view", "download-view"]
     },

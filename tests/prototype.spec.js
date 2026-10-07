@@ -43,6 +43,24 @@ test("Workspaces → workspace Runs page → current run opens the failed run", 
   await expect(advisor(page)).toHaveClass(/is-open/);
 });
 
+test("the failing workspace is payments-prod-eu everywhere, and isn't listed as its own consumer", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".workspace-name-link")).toHaveText("payments-prod-eu");
+  await page.locator('button[data-nav="workspace-runs"]').click();
+  await expect(page.locator(".workspace-runs-page .breadcrumbs")).toContainText("payments-prod-eu");
+  await page.locator(".current-run-card .workspace-run-row").click();
+  await expect(page.locator(".run-page .breadcrumbs")).toContainText("payments-prod-eu / Runs");
+  await expect(page.locator(".run-page h1").first()).toHaveText("payments-prod-eu");
+  await expect(page.locator("body")).not.toContainText("my-workspace");
+
+  await page.getByRole("button", { name: "What other workspaces are using RDS module v5.1.0?" }).click();
+  await page.getByRole("button", { name: /View module consumers in Explorer/ }).click();
+  const names = await page.locator(".results-table .row-name-link").allTextContents();
+  expect(names).toContain("payments-prod-sa");
+  expect(names).not.toContain("payments-prod-eu");
+  expect(new Set(names).size).toBe(names.length);
+});
+
 test("a new page starts scrolled to the top", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto("/");
@@ -176,7 +194,7 @@ test("tier 2 → tier 3 → graph → save → export (demo flow §5)", async ({
   // Graph on demand: the v5.1.0 row's link opens the consumer topology.
   await page.locator('tr[data-row-key="v5.1.0"]').getByRole("button", { name: /view blast radius/ }).click();
   await expect(page.locator(".topology")).toBeVisible();
-  await expect(page.locator('[data-graph-node="payments-prod-eu"]')).toHaveClass(/is-focused/);
+  await expect(page.locator('[data-graph-node="payments-prod-sa"]')).toHaveClass(/is-focused/);
   await expect(page.locator(".answer-card").last()).toContainText("5 workspaces consume v5.1.0");
 
   // Back to the derived view, save it (keeps ✦ badge), then export CSV.
@@ -204,20 +222,20 @@ test("table rows have no hover affordance; graph selection shows in the Albus li
   await page.locator('button[data-nav="explorer"]').click();
   await page.locator("#explorer-ask-input").fill("Drifted workspaces");
   await page.locator("#explorer-ask-input").press("Enter");
-  const row = page.locator('tr[data-row-key="payments-prod-eu"]');
+  const row = page.locator('tr[data-row-key="payments-prod-sa"]');
   await expect(row).toHaveCSS("cursor", "auto");
   await row.hover();
   await expect(row.locator("td").first()).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
 
   await page.getByRole("button", { name: "Graph" }).click();
-  await page.locator('[data-graph-node="payments-prod-eu"]').click();
-  await expect(conversation(page).locator(".node-row.is-open")).toContainText("payments-prod-eu");
+  await page.locator('[data-graph-node="payments-prod-sa"]').click();
+  await expect(conversation(page).locator(".node-row.is-open")).toContainText("payments-prod-sa");
   await expect(page.locator(".graph-query-row .compact-query-content")).toContainText("Drifted workspaces");
 
   await page.getByRole("button", { name: "Table" }).click();
   await expect(row).toHaveClass(/is-selected/);
   await page.getByRole("button", { name: "Graph" }).click();
-  await expect(page.locator('[data-graph-node="payments-prod-eu"]')).toHaveClass(/is-focused/);
+  await expect(page.locator('[data-graph-node="payments-prod-sa"]')).toHaveClass(/is-focused/);
 });
 
 test("run → Explorer graph: RETURNED NODES lists the module and its consumers (design 03)", async ({ page }) => {
@@ -236,7 +254,7 @@ test("module consumers use the Explorer Tag property, not Environment", async ({
   await expect(page.locator(".results-table th")).toContainText(["Tag"]);
   await expect(page.locator(".results-table thead")).not.toContainText("Environment");
 
-  await conversation(page).locator('[data-node-row="payments-prod-eu"]').click();
+  await conversation(page).locator('[data-node-row="payments-prod-sa"]').click();
   const details = conversation(page).locator(".node-row.is-open .node-row-details");
   await expect(details.locator("dt").first()).toHaveText("Tag");
   await expect(details.locator("dd").first()).toHaveText("production");
