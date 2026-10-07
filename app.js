@@ -11,6 +11,8 @@
   const data = window.PROTOTYPE_DATA;
   const RDS_CONSUMERS = data.rdsConsumersQuery;
   const RDS_VERSIONS = data.rdsVersionsQuery;
+  // Same name the run investigation uses for the failing module (modules/rds/v5.1.0).
+  const RDS_MODULE = `rds/${data.run.currentModuleVersion}`;
 
   const state = {
     view: "workspaces",
@@ -64,6 +66,15 @@
   };
 
   const consumers = () => data.affectedWorkspaces.slice(1);
+  const rdsModuleDetails = () => {
+    const production = consumers().filter(node => node.environment === "production").length;
+    return [
+      ["Version", data.run.currentModuleVersion],
+      ["Source", "app.terraform.io/CoolCorp/rds/aws"],
+      ["Consumers", `${consumers().length} workspaces (${production} production)`],
+      [`Change from ${data.run.previousModuleVersion}`, "Renames db_name (forces replacement); adds prevent_destroy"]
+    ];
+  };
 
   // ---------------------------------------------------------------------------
   // Views
@@ -158,7 +169,7 @@
       <div class="workspace-meta"><span>▣ Locked by <strong>johndoe</strong></span><span>▤ Resources <strong>${data.workspace.resources}</strong></span><span>◇ Tags <strong>3</strong></span><span>⚑ Terraform <u>${data.workspace.terraformVersion}</u></span></div>
       <p class="updated">◷ Updated today at 10:12 AM</p>
       <div class="run-heading"><h2>${data.run.title}</h2><span class="badge neutral">◷ Current</span><span class="badge danger">ⓧ Errored</span></div>
-      <div class="run-stats"><div><small>Plan Duration</small><strong>${data.run.duration}</strong></div><div><small>Resources to be changed</small><strong><span class="green">+2</span> <span class="blue">~0</span> <span class="red">-0</span></strong></div></div>
+      <div class="run-stats"><div><small>Plan Duration</small><strong>${data.run.duration}</strong></div><div><small>Resources to be changed</small><strong><span class="red">+2</span> <span class="blue">~0</span> <span class="red">-0</span></strong></div></div>
       <section class="panel run-details"><div class="panel-title">⌄　▤　<strong>Run Details</strong><span><strong>${data.run.actor}</strong> triggered a run from ${data.run.source}</span></div></section>
       <section class="panel plan-panel"><div class="panel-title"><span class="red">ⓧ</span>　<strong>Plan errored</strong></div><div class="panel-body">
         <p><strong>Started</strong> 30 minutes ago　&gt; <strong>Finished</strong> 30 minutes ago</p><div class="create-bar">＋ 2 to create</div>
@@ -464,7 +475,7 @@
           { id: "name", label: "Workspace", locked: true, cell: ({ node }) => nameLink(node.name, node.name) },
           { id: "environment", label: "Tag", cell: ({ node }) => node.environment === "production" ? '<span class="status-pill breaking">production</span>' : node.environment },
           { id: "runStatus", label: "Current run", cell: ({ node }) => node.runStatus },
-          { id: "module", label: "Module", cell: () => "terraform-aws-rds v5.1.0" }
+          { id: "module", label: "Module", cell: () => RDS_MODULE }
         ]
       };
     }
@@ -525,7 +536,7 @@
       const x1 = center.x * 10, y1 = center.y * 6.5, x2 = position.x * 10, y2 = position.y * 6.5;
       return `<path class="${node.relation}" d="M${x1} ${y1} C${(x1 + x2) / 2} ${y1}, ${(x1 + x2) / 2} ${y2}, ${x2} ${y2}" marker-end="url(#arrow-${node.relation})"/>`;
     }).join("");
-    return `<div class="topology" aria-label="RDS module consumers"><div class="risk-banner"><span>!</span><strong>2 of these are production workspaces — changes carry elevated risk</strong></div><svg class="edges" viewBox="0 0 1000 650" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="arrow-consumer" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker></defs>${lines}</svg><button class="module-node" style="left:${center.x}%;top:${center.y}%" data-action="select-module"><span>▣</span><strong>labels/aws</strong><small>v1.3.0</small></button>${nodes.map((node, index) => `<button class="graph-node ${node.relation} ${isFocused(node.name) ? "is-focused" : ""}" style="left:${positions[index].x}%;top:${positions[index].y}%" data-graph-node="${node.name}"><span class="node-symbol">▤</span>${node.environment === "production" ? "<i>!</i>" : ""}<strong>${node.name}</strong><small>${node.environment}</small></button>`).join("")}<div class="force-tools"><span>Force</span><button type="button" aria-label="Previous layout">‹</button><button type="button" aria-label="Next layout">›</button></div><div class="legend"><span><i class="workspace-key"></i> Workspace</span><span><i class="selected-key"></i> selected</span><span><i class="consumer-key"></i> direct dependent</span></div></div>`;
+    return `<div class="topology" aria-label="RDS module consumers"><div class="risk-banner"><span>!</span><strong>2 of these are production workspaces — changes carry elevated risk</strong></div><svg class="edges" viewBox="0 0 1000 650" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="arrow-consumer" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z"/></marker></defs>${lines}</svg><button class="module-node" style="left:${center.x}%;top:${center.y}%" data-action="select-module"><span>▣</span><strong>${RDS_MODULE}</strong><small>module</small></button>${nodes.map((node, index) => `<button class="graph-node ${node.relation} ${isFocused(node.name) ? "is-focused" : ""}" style="left:${positions[index].x}%;top:${positions[index].y}%" data-graph-node="${node.name}"><span class="node-symbol">▤</span>${node.environment === "production" ? "<i>!</i>" : ""}<strong>${node.name}</strong><small>${node.environment}</small></button>`).join("")}<div class="force-tools"><span>Force</span><button type="button" aria-label="Previous layout">‹</button><button type="button" aria-label="Next layout">›</button></div><div class="legend"><span><i class="workspace-key"></i> Workspace</span><span><i class="selected-key"></i> selected</span><span><i class="consumer-key"></i> direct dependent</span></div></div>`;
   }
 
   function inventoryResultsCanvas(result) {
@@ -572,11 +583,11 @@
     const resultNode = result?.nodes.find(node => node.name === name);
     let type = "WORKSPACE";
     let details;
-    if (name === "labels/aws") {
+    if (name === RDS_MODULE) {
       type = "MODULE";
-      details = [["Version", "v1.3.0"], ["Consumers", String(consumers().length)], ["Source", "app.terraform.io/CoolCorp/labels-aws"], ["Last updated", "Mar 12 2025"]];
+      details = rdsModuleDetails();
     } else if (workspace) {
-      details = [["Tag", workspace.environment], ["Run status", workspace.runStatus], ["Resources", String(workspace.resources)], ["Module", "terraform-aws-rds v5.1.0"]];
+      details = [["Tag", workspace.environment], ["Run status", workspace.runStatus], ["Resources", String(workspace.resources)], ["Module", RDS_MODULE]];
     } else if (resultNode) {
       type = (resultNode.workspaces ? result.type : result.type === "resource" ? "resource" : "workspace").toUpperCase();
       details = [["Details", resultNode.detail], ...(resultNode.workspaces ? [["Workspaces", resultNode.workspaces.join(", ")]] : [])];
@@ -608,7 +619,7 @@
     if (state.explorerQuery === RDS_VERSIONS) {
       rows = [["version", "workspaces", "workspace_detail", "registry_status_albus", "last_used_albus", "note_albus"], ...data.rdsVersions.rows.map(item => [item.version, item.workspaces, item.detail, item.registryStatus, item.lastUsed, item.note])];
     } else if (state.explorerQuery === RDS_CONSUMERS) {
-      rows = [["workspace", "tag", "current_run", "module"], ...visibleRows(RDS_CONSUMERS).map(node => [node.name, node.environment, node.runStatus, "terraform-aws-rds v5.1.0"])];
+      rows = [["workspace", "tag", "current_run", "module"], ...visibleRows(RDS_CONSUMERS).map(node => [node.name, node.environment, node.runStatus, RDS_MODULE])];
     } else {
       const result = queryInfo(state.explorerQuery).result;
       rows = [["name", "type", "details"], ...result.nodes.map(node => [node.name, result.type, node.detail])];
@@ -874,8 +885,8 @@
       }));
     }
     if (info.key === RDS_CONSUMERS) {
-      const module = { key: "labels/aws", name: "labels/aws", kind: "module", details: [["Project name", "platform"], ["Current run ID", "run-Ax7mKPqZ2nLvYw"], ["Run status", "applied"], ["VCS repo", "example1/labels-aws"], ["No-code module", "no-code-module-3"], ["Module count", "12"], ["Providers", "registry.terraform.io/hashicorp/aws"], ["Terraform version", "1.3.0"], ["Drifted", "false"], ["Resource count", "21"]] };
-      return [module, ...visibleRows(RDS_CONSUMERS).map(node => ({ key: node.name, name: node.name, kind: "workspace", alert: node.environment === "production", details: [["Tag", node.environment], ...workspaceDetails(node).filter(([term]) => term !== "Project name"), ["Module", "terraform-aws-rds v5.1.0"]] }))];
+      const module = { key: RDS_MODULE, name: RDS_MODULE, kind: "module", details: rdsModuleDetails() };
+      return [module, ...visibleRows(RDS_CONSUMERS).map(node => ({ key: node.name, name: node.name, kind: "workspace", alert: node.environment === "production", details: [["Tag", node.environment], ...workspaceDetails(node).filter(([term]) => term !== "Project name"), ["Module", RDS_MODULE]] }))];
     }
     const { result } = info;
     if (["module", "provider"].includes(result.type)) {
@@ -1108,7 +1119,7 @@
       renderConversation();
     }
     if (action === "show-blast-radius") ask("Show blast radius for v5.1.0");
-    if (action === "select-module") selectNode("labels/aws");
+    if (action === "select-module") selectNode(RDS_MODULE);
     if (action === "clear-node") { state.selectedNode = null; renderMain(); renderConversation(); }
     if (action === "toggle-browse") { state.browseOpen = !state.browseOpen; renderMain(); }
     if (action === "saved-views") { state.modal = "saved-views"; state.browseOpen = false; renderMain(); }

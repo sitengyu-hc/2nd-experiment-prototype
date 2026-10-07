@@ -248,9 +248,9 @@ test("changing Type in the builder swaps the available columns", async ({ page }
   await editor.getByLabel("Type").selectOption("modules");
   const column = editor.locator('[data-condition-row="0"]').getByLabel("Column");
   await expect(column.locator("option")).toHaveText(["Name", "Version", "Source", "Workspace count", "Workspaces"]);
-  await editor.locator('[data-condition-row="0"]').getByLabel("Value").fill("terraform-aws-rds");
+  await editor.locator('[data-condition-row="0"]').getByLabel("Value").fill("rds");
   await editor.getByRole("button", { name: "Apply" }).click();
-  await expect(page.locator(".query-chip")).toHaveText(["Modules", "Name is terraform-aws-rds"]);
+  await expect(page.locator(".query-chip")).toHaveText(["Modules", "Name is rds"]);
 });
 
 test("the page search field is hidden while the query builder is open", async ({ page }) => {

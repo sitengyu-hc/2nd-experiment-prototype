@@ -25,6 +25,27 @@ test("failed run entry opens Albus with expanded investigation prompts", async (
   await expect(page.locator("#prompt-menu")).toContainText("What options do I have to fix this?");
 });
 
+test("failed plan shows its 2 creates in red, not green", async ({ page }) => {
+  await openFailedRun(page);
+  await expect(page.locator(".create-bar")).toHaveText("＋ 2 to create");
+  await expect(page.locator(".create-bar")).toHaveCSS("background-color", "rgb(209, 28, 36)");
+  await expect(page.locator(".run-stats span", { hasText: "+2" })).toHaveClass("red");
+});
+
+test("run → Explorer keeps the module name from the run investigation (rds/v5.1.0)", async ({ page }) => {
+  await openFailedRun(page);
+  await expect(page.locator(".run-page")).toContainText("modules/rds/v5.1.0");
+  await page.getByRole("button", { name: "What other workspaces are using RDS module v5.1.0?" }).click();
+  await page.getByRole("button", { name: /View module consumers in Explorer/ }).click();
+
+  await expect(page.locator(".table-compact-hud .aq-title")).toHaveText("Workspaces using rds/v5.1.0");
+  await expect(page.locator('.results-table td:last-child').first()).toHaveText("rds/v5.1.0");
+  await page.getByRole("button", { name: "Graph" }).click();
+  await expect(page.locator(".module-node strong")).toHaveText("rds/v5.1.0");
+  await expect(conversation(page).locator(".node-row").first()).toContainText("rds/v5.1.0");
+  await expect(page.locator("body")).not.toContainText(/labels\/aws|terraform-aws-rds/);
+});
+
 test("Workspaces → workspace Runs page → current run opens the failed run", async ({ page }) => {
   await page.goto("/");
   await page.locator('button[data-nav="workspace-runs"]').click();
@@ -112,11 +133,11 @@ test("tier 1 from the run: Explorer opens as a table with chips and a one-line r
 
   await expect(advisor(page)).toHaveClass(/is-open/);
   await expect(page.locator(".results-table tbody tr")).toHaveCount(5);
-  await expect(page.locator(".conditions-accordion .query-chip")).toHaveText(["Modules", "Name is terraform-aws-rds", "Version is 5.1.0"]);
+  await expect(page.locator(".conditions-accordion .query-chip")).toHaveText(["Modules", "Name is rds", "Version is 5.1.0"]);
   // The panel is open, so the top bar shows chips, not a second text box.
   await expect(page.locator("#explorer-ask-input")).toHaveCount(0);
   await expect(conversation(page)).toContainText("Five other workspaces");
-  await expect(page.locator(".receipt")).toContainText("Built query: Modules where Name is terraform-aws-rds and Version is 5.1.0 · 5 results");
+  await expect(page.locator(".receipt")).toContainText("Built query: Modules where Name is rds and Version is 5.1.0 · 5 results");
   await expect(page.locator(".answer-card")).toHaveCount(0);
 
   // Refining from the Albus composer narrows the same table.
@@ -166,7 +187,7 @@ test("tier 2 → tier 3 → graph → save → export (demo flow §5)", async ({
   await expect(card).toContainText("Couldn't check");
   await expect(card).toContainText("Applied to table");
   await expect(page.locator(".derived-banner")).toContainText("Albus-derived view");
-  await expect(page.locator(".table-compact-hud")).toContainText("terraform-aws-rds — all published versions");
+  await expect(page.locator(".table-compact-hud")).toContainText("rds — all published versions");
   await expect(page.locator("th.albus-col")).toHaveText(["✦ Registry status", "✦ Last used", "✦ Note"]);
   await expect(page.locator("th.albus-col").first()).toHaveAttribute("title", /Private registry/);
   await expect(page.locator(".derived-table tbody tr")).toHaveCount(6);
@@ -244,8 +265,9 @@ test("run → Explorer graph: RETURNED NODES lists the module and its consumers 
   await expect(conversation(page).locator(".node-row")).toHaveCount(6);
   await page.locator('[data-action="select-module"]').click();
   const open = conversation(page).locator(".node-row.is-open");
-  await expect(open).toContainText("labels/aws");
-  await expect(open).toContainText("No-code module");
+  await expect(open).toContainText("rds/v5.1.0");
+  await expect(open).toContainText("app.terraform.io/CoolCorp/rds/aws");
+  await expect(open).toContainText("5 workspaces (2 production)");
   await expect(conversation(page)).toContainText("Five other workspaces");
 });
 

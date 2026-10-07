@@ -135,7 +135,7 @@ tr.clickable:hover { background: #f1f6ff; }
 .panel-title { min-height: 46px; display: flex; align-items: center; padding: 0 16px; }
 .panel-title > span:last-child { margin-left: auto; color: #515562; }
 .panel-body { padding: 4px 16px 22px; }
-.create-bar { background: #008a22; color: #fff; font-weight: 700; padding: 9px; border-radius: 3px; margin: 20px 0 15px; }
+.create-bar { background: #d11c24; color: #fff; font-weight: 700; padding: 9px; border-radius: 3px; margin: 20px 0 15px; }
 .filter-row { display: flex; gap: 16px; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--muted); }
 .filter-row .wide { flex: 1; text-align: left; }.filter-row span { margin-left: auto; }
 .diagnostics-heading { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; }
