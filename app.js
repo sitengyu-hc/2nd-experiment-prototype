@@ -70,9 +70,10 @@
   // ---------------------------------------------------------------------------
 
   function setView(view, options = {}) {
-    if (state.view !== view) state.previousView = state.view;
+    const changed = state.view !== view;
+    if (changed) state.previousView = state.view;
     state.view = view;
-    if (view === "run" || view === "workspaces") {
+    if (view === "run" || view === "workspaces" || view === "workspace-runs") {
       state.advisorOpen = false;
       advisor.classList.remove("is-open");
       document.body.classList.remove("advisor-open");
@@ -85,6 +86,8 @@
       initializeAdvisor();
     }
     renderMain();
+    // A new page starts at the top (the main pane otherwise keeps the previous page's scroll position).
+    if (changed) main.scrollTop = 0;
     renderConversation();
     updateScope();
     updateNavigation();
@@ -98,6 +101,7 @@
     document.body.classList.toggle("explorer-direct", state.view === "explorer" && !explorerResults);
     // Explorer results collapse the nav to a thin rail by default; the nav toggle still expands it (CSS keyed on nav-collapsed).
     if (state.view === "workspaces") main.innerHTML = workspacesView();
+    if (state.view === "workspace-runs") main.innerHTML = workspaceRunsView();
     if (state.view === "run") main.innerHTML = runView();
     if (state.view === "explorer") main.innerHTML = explorerView();
   }
@@ -117,9 +121,33 @@
       <div class="page-title-row"><div><h1>Workspaces</h1><p class="lede">Manage infrastructure across your organization.</p></div><button class="primary">New workspace</button></div>
       <div class="tabs"><button class="active">Needs attention</button><button>Errored</button><button>Running</button><button>On hold</button><button>Completed</button></div>
       <div class="toolbar"><label class="search-box">⌕ <input placeholder="Search by workspace name"></label><button class="secondary">All filters</button><span>No filters applied</span></div>
+      <section class="workspace-albus-alert" aria-label="More context available"><div class="workspace-albus-copy"><span class="workspace-albus-spark" aria-hidden="true">✦</span><div><strong>More context available</strong><p>Open ALBUS the conversational agent to investigate related configuration and usage.</p></div></div><button type="button" class="workspace-albus-button" data-action="open-workspace-albus">Explore with Albus</button></section>
       <div class="table-wrap"><table><thead><tr><th>Workspace</th><th>Status</th><th>Repository</th><th>Project</th><th>Latest change</th></tr></thead><tbody>
-        ${rows.map((row, index) => `<tr ${index === 0 ? 'class="clickable" data-nav="run"' : ""}><td><strong>${row[0]}</strong></td><td><span class="status-dot ${row[1].toLowerCase().replaceAll(" ", "-")}"></span>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td></tr>`).join("")}
+        ${rows.map((row, index) => `<tr><td>${index === 0 ? `<button type="button" class="workspace-name-link" data-nav="workspace-runs"><strong>${row[0]}</strong></button>` : `<strong>${row[0]}</strong>`}</td><td><span class="status-dot ${row[1].toLowerCase().replaceAll(" ", "-")}"></span>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td></tr>`).join("")}
       </tbody></table><div class="pagination">1–7 of 100 <button>1</button><button>2</button><button>3</button><button>…</button><button>10</button></div></div>
+    </div>`;
+  }
+
+  function workspaceRunsView() {
+    const runs = [
+      { title: data.run.title, id: `#${data.run.id}`, actor: data.run.actor, source: data.run.source, branch: "Main", commit: "d972f24", status: "Current", current: true },
+      { title: "Update workflow triggers", id: "#run-gRf9Hj2sNc", actor: "jdoe", source: "GitHub", branch: "Main", commit: "b81e7g9", status: "Applied" },
+      { title: "Use new trusted SHA", id: "#run-tY5Lp8qJa", actor: "jdoe", source: "GitHub", branch: "Main", commit: "h53i1a8", status: "Applied" }
+    ];
+    const runRow = run => `<button type="button" class="workspace-run-row ${run.current ? "current" : ""}" data-nav="run"><span class="run-avatar">${run.actor === data.run.actor ? "👨🏻‍💻" : "👨🏻‍💻"}</span><span class="run-row-content"><strong>${run.title}</strong><small>${run.id}　|　<b>${run.actor}</b> triggered via ${run.source}　|　Branch <em>${run.branch}</em>　|　<a>${run.commit}</a></small></span><span class="run-status">${run.status}</span></button>`;
+    return `<div class="workspace-runs-page">
+      <main class="workspace-runs-content">
+        <div class="breadcrumbs"><button class="text-link" data-nav="workspaces">CoolCorp</button>　/　<button class="text-link" data-nav="workspaces">Workspaces</button>　/　<strong>payments-prod-eu</strong>　/　Overview</div>
+        <div class="workspace-runs-title"><div><h1>payments-prod-eu</h1><p>ID: ws-1HkX32P8UKEJ3Lmo　<span class="copy-id">▣</span></p><button class="text-link">Add workspace description</button></div><button class="primary">＋ New Run</button></div>
+        <div class="workspace-runs-meta"><span>♧ Unlocked</span><span>▣ Resources <b>211</b></span><span>◇ Tags <b>3</b></span><span>◈ Terraform <u>v1.8.4</u></span><span>◷ Updated <b>today at 10:12 AM</b></span></div>
+        <h2 class="current-run-heading">Current Run</h2>
+        <div class="current-run-card" data-nav="run">${runRow(runs[0])}</div>
+        <section class="workspace-runs-alert workspace-albus-alert" aria-label="More context available"><div class="workspace-albus-copy"><span class="workspace-albus-spark" aria-hidden="true">✦</span><div><strong>More context available</strong><p>Open ALBUS the conversational agent to investigate related configuration and usage.</p></div></div><button type="button" class="workspace-albus-button" data-action="open-workspace-albus">Explore with Albus</button></section>
+        <h2 class="run-list-heading">Run List</h2>
+        <div class="run-tabs"><button class="active">All <b>126</b></button><button>⚠ Needs Attention <b>0</b></button><button>ⓧ Errored <b>12</b></button><button>◯ Running <b>0</b></button><button>◉ On Hold <b>0</b></button></div>
+        <div class="run-list-toolbar"><label class="search-box">⌕ <input placeholder="Search Runs"></label><button class="secondary">☷ Status⌄</button><button class="secondary">☷ Operation⌄</button></div>
+        <section class="workspace-run-list">${runs.map(runRow).join("")}</section>
+      </main>
     </div>`;
   }
 
@@ -1052,6 +1080,13 @@
     if (action === "toggle-albus") {
       if (state.advisorOpen) closeAdvisor();
       else { openAdvisor(); initializeAdvisor(); }
+    }
+    if (action === "open-workspace-albus") {
+      state.advisorJourney = "explorer";
+      state.messages = [];
+      state.promptsOpen = defaultPromptsOpen("explorer");
+      openAdvisor();
+      initializeAdvisor();
     }
     if (action === "open-advisor") { openAdvisor(); initializeAdvisor(); }
     if (action === "new-session") {

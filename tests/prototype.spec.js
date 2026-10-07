@@ -6,7 +6,8 @@ const conversation = page => page.locator("#conversation");
 
 async function openFailedRun(page) {
   await page.goto("/");
-  await page.locator('tr[data-nav="run"]').click();
+  await page.locator('button[data-nav="workspace-runs"]').click();
+  await page.locator('.workspace-run-row[data-nav="run"]').first().click();
 }
 
 async function openRunInExplorer(page) {
@@ -23,6 +24,47 @@ test("failed run entry opens Albus with expanded investigation prompts", async (
   await expect(promptToggle(page)).toHaveAttribute("aria-expanded", "true");
   await expect(page.locator("#prompt-menu")).toContainText("What options do I have to fix this?");
 });
+
+test("Workspaces → workspace Runs page → current run opens the failed run", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('button[data-nav="workspace-runs"]').click();
+
+  const runsPage = page.locator(".workspace-runs-page");
+  await expect(runsPage.locator("h1")).toHaveText("payments-prod-eu");
+  await expect(runsPage.locator(".current-run-card")).toContainText("Fix: db_name is the force-replacement trigger");
+  await expect(runsPage.locator(".workspace-run-list .workspace-run-row")).toHaveCount(3);
+  await expect(advisor(page)).not.toHaveClass(/is-open/);
+
+  await runsPage.locator(".breadcrumbs").getByRole("button", { name: "Workspaces" }).click();
+  await expect(page.locator(".page h1").first()).toHaveText("Workspaces");
+  await page.locator('button[data-nav="workspace-runs"]').click();
+  await runsPage.locator(".current-run-card .workspace-run-row").click();
+  await expect(page.locator(".run-page")).toBeVisible();
+  await expect(advisor(page)).toHaveClass(/is-open/);
+});
+
+test("a new page starts scrolled to the top", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("/");
+  await page.locator("#main-content").evaluate(element => { element.scrollTop = 200; });
+  expect(await page.locator("#main-content").evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+  await page.locator('button[data-nav="workspace-runs"]').click();
+  await expect(page.locator(".workspace-runs-page h1")).toBeInViewport();
+  expect(await page.locator("#main-content").evaluate(element => element.scrollTop)).toBe(0);
+});
+
+for (const [where, open] of [
+  ["Workspaces", async page => page.goto("/")],
+  ["workspace Runs", async page => { await page.goto("/"); await page.locator('button[data-nav="workspace-runs"]').click(); }]
+]) {
+  test(`"Explore with Albus" on ${where} opens Albus`, async ({ page }) => {
+    await open(page);
+    await expect(page.locator(".workspace-albus-alert")).toContainText("More context available");
+    await page.locator('[data-action="open-workspace-albus"]').click();
+    await expect(advisor(page)).toHaveClass(/is-open/);
+    await expect(conversation(page).locator(".advisor-message").first()).toBeVisible();
+  });
+}
 
 test("Explore in Albus opens and closes the Albus panel", async ({ page }) => {
   await openFailedRun(page);
