@@ -34,6 +34,7 @@
     queryConditions: [],
     queryAlbus: null,
     refinements: [], // ids of data.refinements applied to the current query
+    runMessages: null, // the run investigation, kept while the user is in Explorer so "Back to run" restores it
     nodeSearch: "", // filter text for the RETURNED <type> list in the Albus panel
     hiddenColumns: [], // table columns hidden via "View columns"
     columnsMenuOpen: false,
@@ -892,7 +893,11 @@
     state.navCollapsed = true;
     document.body.classList.add("nav-collapsed");
     resetExplorerQuery();
-    state.messages = state.messages.length ? [state.messages[state.messages.length - 1]] : [];
+    if (state.view === "run") state.runMessages = state.messages.slice();
+    // Carry the impact answer (it holds "Back to run") even if the user followed its link from an older answer.
+    const impactAnswer = [...state.messages].reverse().find(message => message.html?.includes('data-action="show-impact"'));
+    const carried = impactAnswer || state.messages[state.messages.length - 1];
+    state.messages = carried ? [carried] : [];
     setView("explorer", { impactMode: true });
     if (!state.advisorOpen) openAdvisor();
   }
@@ -1131,7 +1136,13 @@
         advisorJourney: directExplorerEntry ? "explorer" : "run"
       });
       if (directExplorerEntry) closeAdvisor();
-      if (runEntry) { openAdvisor(); initializeAdvisor(); }
+      if (runEntry && state.runMessages) {
+        // Back to run: pick the run investigation up where the user left it.
+        state.messages = state.runMessages;
+        state.runMessages = null; // the live conversation is the run's again
+        state.promptsOpen = false;
+      }
+      if (runEntry) { openAdvisor(); initializeAdvisor(); renderConversation(); }
       return;
     }
 
@@ -1144,6 +1155,7 @@
       // Always the default run investigation (turn-zero analysis + fix prompts), even if an earlier
       // conversation (e.g. "View 5 workspaces") is still in the panel.
       state.messages = [];
+      state.runMessages = null;
       state.impactMode = false;
       state.promptsOpen = defaultPromptsOpen("run");
       setView("run", { impactMode: false, advisorJourney: "run" });
@@ -1162,6 +1174,7 @@
     if (action === "open-advisor") { openAdvisor(); initializeAdvisor(); }
     if (action === "new-session") {
       state.messages = [];
+      state.runMessages = null;
       if (state.view === "explorer") resetExplorerQuery();
       state.promptsOpen = defaultPromptsOpen();
       initializeAdvisor();

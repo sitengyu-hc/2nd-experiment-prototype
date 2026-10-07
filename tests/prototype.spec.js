@@ -248,6 +248,36 @@ test("Back to query and results keeps Albus open with the run conversation", asy
   await expect(page.locator(".run-page")).toBeVisible();
 });
 
+test("Back to run restores the run investigation history", async ({ page }) => {
+  await openFailedRun(page);
+  await page.getByRole("button", { name: "What options do I have to fix this?" }).click();
+  await promptToggle(page).click();
+  await page.locator("#prompt-menu").getByRole("button", { name: "What other workspaces are using RDS module v5.1.0?" }).click();
+  await page.getByRole("button", { name: /View module consumers in Explorer/ }).click();
+
+  // In Explorer, continue with tier 2, then go back.
+  await promptToggle(page).click();
+  await page.locator("#prompt-menu").getByRole("button", { name: "Which RDS module versions are no longer in use?" }).click();
+  await expect(page.locator(".table-compact-hud")).toContainText("rds — all published versions");
+  await page.getByRole("button", { name: "Back to run" }).click();
+
+  await expect(page.locator(".run-page")).toBeVisible();
+  const questions = conversation(page).locator(".user-message p");
+  await expect(questions).toHaveText(["What options do I have to fix this?", "What other workspaces are using RDS module v5.1.0?"]);
+  await expect(conversation(page)).toContainText("The plan failed because");
+  await expect(conversation(page)).toContainText("Recommended: upgrade to v5.1.1");
+  await expect(conversation(page)).toContainText("Five other workspaces");
+  await expect(conversation(page)).not.toContainText("RETURNED");
+
+  // Keep investigating on the run page, go to Explorer again, and come back: nothing is lost.
+  await promptToggle(page).click();
+  await page.locator("#prompt-menu").getByRole("button", { name: "Who introduced the lifecycle guard?" }).click();
+  await conversation(page).getByRole("button", { name: /View module consumers in Explorer/ }).click();
+  await expect(page.locator(".table-compact-hud .aq-title")).toHaveText("Workspaces using rds/v5.1.0");
+  await page.getByRole("button", { name: "Back to run" }).click();
+  await expect(questions).toHaveText(["What options do I have to fix this?", "What other workspaces are using RDS module v5.1.0?", "Who introduced the lifecycle guard?"]);
+});
+
 test("tier 2 → tier 3 → graph → save → export (demo flow §5)", async ({ page }) => {
   await openRunInExplorer(page);
 
