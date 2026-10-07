@@ -153,7 +153,7 @@
       title: `${escapeHtml(data.workspace.name)}: latest run failed`,
       body: `<code>${RDS_MODULE}</code> renames <code>db_name</code>, which forces the production database to be replaced; <code>prevent_destroy</code> blocked it. <b>${atRisk.length} other workspaces use ${RDS_MODULE} (${production} production)</b> and may hit the same failure on their next run.`,
       sources: "run diagnostics · Explorer usage (indexed 6h ago)",
-      actions: `<button type="button" class="workspace-albus-button" data-nav="run">Investigate run</button><button type="button" class="workspace-albus-button" data-action="view-at-risk">View ${atRisk.length} workspaces</button>`
+      actions: `<button type="button" class="workspace-albus-button" data-action="investigate-run">Investigate run</button><button type="button" class="workspace-albus-button" data-action="view-at-risk">View ${atRisk.length} workspaces</button>`
     });
   }
 
@@ -163,7 +163,7 @@
       className: "workspace-runs-alert",
       title: "Latest run failed",
       body: `The <code>rds</code> ${data.run.previousModuleVersion} → ${data.run.currentModuleVersion} upgrade would replace this production database. Nothing was changed; <code>prevent_destroy</code> stopped it.`,
-      actions: `<button type="button" class="workspace-albus-button" data-nav="run">Investigate with Albus</button>`
+      actions: `<button type="button" class="workspace-albus-button" data-action="investigate-run">Investigate run</button>`
     });
   }
 
@@ -1130,6 +1130,16 @@
     if (action === "toggle-albus") {
       if (state.advisorOpen) closeAdvisor();
       else { openAdvisor(); initializeAdvisor(); }
+    }
+    if (action === "investigate-run") {
+      // Always the default run investigation (turn-zero analysis + fix prompts), even if an earlier
+      // conversation (e.g. "View 5 workspaces") is still in the panel.
+      state.messages = [];
+      state.impactMode = false;
+      state.promptsOpen = defaultPromptsOpen("run");
+      setView("run", { impactMode: false, advisorJourney: "run" });
+      openAdvisor();
+      initializeAdvisor();
     }
     if (action === "view-at-risk") {
       // Workspaces list → straight to the at-risk workspaces: same state as asking the run page

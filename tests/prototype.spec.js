@@ -110,6 +110,27 @@ test("Workspaces insight → Investigate run opens the failed run with Albus", a
   await expect(page.locator(".run-page")).toBeVisible();
   await expect(advisor(page)).toHaveClass(/is-open/);
   await expect(conversation(page)).toContainText("The plan failed because");
+  await expect(conversation(page)).not.toContainText("Five other workspaces");
+  await expect(page.locator("#prompt-menu")).toContainText("What options do I have to fix this?");
+});
+
+test("Investigate run starts the default analysis even after viewing the at-risk workspaces", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".workspace-albus-alert").getByRole("button", { name: "View 5 workspaces" }).click();
+  await expect(conversation(page)).toContainText("Five other workspaces");
+
+  await page.locator("#nav-collapse").click();
+  await page.locator('.side-nav button[data-nav-item="workspaces"]').click();
+  await page.locator(".workspace-albus-alert").getByRole("button", { name: "Investigate run" }).click();
+  await expect(page.locator(".run-page")).toBeVisible();
+  await expect(conversation(page)).toContainText("The plan failed because");
+  await expect(conversation(page)).not.toContainText("Five other workspaces");
+
+  // Same from the workspace overview card.
+  await page.locator('.run-page .breadcrumbs [data-nav="workspaces"]').click();
+  await page.locator('button[data-nav="workspace-runs"]').click();
+  await page.locator(".workspace-runs-page .workspace-albus-alert").getByRole("button", { name: "Investigate run" }).click();
+  await expect(conversation(page)).toContainText("The plan failed because");
 });
 
 test("Workspaces insight → View 5 workspaces lands on the consumers view and the main path continues", async ({ page }) => {
@@ -138,7 +159,7 @@ test("workspace overview insight is about this workspace only and opens its fail
   await expect(card.locator("strong").first()).toHaveText("Latest run failed");
   await expect(card).toContainText("rds v4.0.0 → v5.1.0 upgrade would replace this production database");
   await expect(card).not.toContainText(/other workspaces|rds\/v5\.1\.0 \(/);
-  await card.getByRole("button", { name: "Investigate with Albus" }).click();
+  await card.getByRole("button", { name: "Investigate run" }).click();
   await expect(page.locator(".run-page")).toBeVisible();
   await expect(advisor(page)).toHaveClass(/is-open/);
 });
